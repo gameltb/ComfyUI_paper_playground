@@ -355,7 +355,7 @@ class DiffusersPipelineComponentSet:
     RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
     FUNCTION = "set_component"
 
-    CATEGORY = "playground/loaders"
+    CATEGORY = "playground/tool"
 
     def set_component(self, diffusers_pipeline, diffusers_component, component_key):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
@@ -385,12 +385,63 @@ class DiffusersPipelineComponentSet:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+class DiffusersPipelineComponentGet:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+                "component_key": ("STRING", {"default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_COMPONENT",)
+    FUNCTION = "get_component"
+
+    CATEGORY = "playground/tool"
+
+    def get_component(self, diffusers_pipeline, component_key):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
+
+        return (diffusers_pipeline.components.get(component_key),)
+
+
+class DiffusersPipelineComponentShow:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "show_component"
+
+    OUTPUT_NODE = True
+
+    CATEGORY = "playground/tool"
+
+    def show_component(self, diffusers_pipeline):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
+
+        components_map = {}
+        for k, v in diffusers_pipeline.components.items():
+            components_map[k] = str(type(v))
+
+        return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
+
+
 NODE_CLASS_MAPPINGS = {
     "DiffusersPipelineFromSingleFile": DiffusersPipelineFromSingleFile,
     "DiffusersPipelineFromPretrained": DiffusersPipelineFromPretrained,
     "DiffusersComponentFromPretrained": DiffusersComponentFromPretrained,
     "DiffusersPipelineSamplerBase": DiffusersPipelineSamplerBase,
     "DiffusersPipelineComponentSet": DiffusersPipelineComponentSet,
+    "DiffusersPipelineComponentGet": DiffusersPipelineComponentGet,
+    "DiffusersPipelineComponentShow": DiffusersPipelineComponentShow,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -400,4 +451,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DiffusersComponentFromPretrained": "Diffusers Component From Pretrained",
     "DiffusersPipelineSamplerBase": "Diffusers Pipeline Sampler Base",
     "DiffusersPipelineComponentSet": "Diffusers Pipeline Component Set",
+    "DiffusersPipelineComponentGet": "Diffusers Pipeline Component Get",
+    "DiffusersPipelineComponentShow": "Diffusers Pipeline Component Show",
 }

@@ -33,13 +33,13 @@ from diffusers.utils import deprecate, logging, BaseOutput
 
 from einops import rearrange
 
-from animatediff.models.unet import UNet3DConditionModel
+from ..models.unet import UNet3DConditionModel
 
-from animatediff.utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
-from animatediff.utils.convert_lora_safetensor_to_diffusers import convert_lora
+from ..utils.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_clip_checkpoint, convert_ldm_vae_checkpoint
+from ..utils.convert_lora_safetensor_to_diffusers import convert_lora
 
-from animatediff.utils.util import prepare_mask_coef, save_videos_grid
-from animatediff.models.resnet import InflatedConv3d
+from ..utils.util import prepare_mask_coef, save_videos_grid
+from ..models.resnet import InflatedConv3d
 
 from PIL import Image
 

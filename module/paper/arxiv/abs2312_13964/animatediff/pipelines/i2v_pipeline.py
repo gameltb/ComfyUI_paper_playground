@@ -25,14 +25,14 @@ from tqdm import tqdm
 from transformers import (CLIPImageProcessor, CLIPTextModel, CLIPTokenizer,
                           CLIPVisionModelWithProjection)
 
-from animatediff.models.resnet import InflatedConv3d
-from animatediff.models.unet import UNet3DConditionModel
-from animatediff.utils.convert_from_ckpt import (convert_ldm_clip_checkpoint,
+from ..models.resnet import InflatedConv3d
+from ..models.unet import UNet3DConditionModel
+from ..utils.convert_from_ckpt import (convert_ldm_clip_checkpoint,
                                                  convert_ldm_unet_checkpoint,
                                                  convert_ldm_vae_checkpoint)
-from animatediff.utils.convert_lora_safetensor_to_diffusers import \
+from ..utils.convert_lora_safetensor_to_diffusers import \
     convert_lora_model_level
-from animatediff.utils.util import prepare_mask_coef_by_statistics
+from ..utils.util import prepare_mask_coef_by_statistics
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 

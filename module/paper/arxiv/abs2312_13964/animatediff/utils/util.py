@@ -11,7 +11,6 @@ from tqdm import tqdm
 from einops import rearrange
 import cv2
 import math
-import moviepy.editor as mpy
 from PIL import Image
 
 # We recommend to use the following affinity score(motion magnitude)
@@ -33,6 +32,8 @@ def zero_rank_print(s):
     if (not dist.is_initialized()) or (dist.is_initialized() and dist.get_rank() == 0): print("### " + s)
 
 def save_videos_mp4(video: torch.Tensor, path: str, fps: int=8):
+    import moviepy.editor as mpy
+
     video = rearrange(video, "b c t h w -> t b c h w")
     num_frames, batch_size, channels, height, width = video.shape
     assert batch_size == 1,\

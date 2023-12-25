@@ -66,16 +66,22 @@ def get_diffusers_component_folder_paths():
 
 
 class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
+    def __init__(self, *args, enable_sequential_cpu_offload=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enable_sequential_cpu_offload = enable_sequential_cpu_offload
+
     def patch_model(self, device_to=None):
         if device_to is not None:
-            self.model.to(device=device_to)
+            if not self.enable_sequential_cpu_offload:
+                self.model.to(device=device_to)
             self.current_device = device_to
 
         return self.model
 
     def unpatch_model(self, device_to=None):
         if device_to is not None:
-            self.model.to(device=device_to)
+            if not self.enable_sequential_cpu_offload:
+                self.model.to(device=device_to)
             self.current_device = device_to
 
 

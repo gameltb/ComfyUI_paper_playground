@@ -103,12 +103,24 @@ class DiffusersPipelineFromPretrained:
         }
 
     RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "from_pretrained"
+    FUNCTION = "diffusers_from_pretrained"
 
     CATEGORY = "playground/loaders"
 
-    def from_pretrained(
+    def diffusers_from_pretrained(
         self, pipeline_type, local_files_only, directory=None, model_id=None
+    ):
+        if pipeline_type != "AUTO":
+            pipeline_cls = DIFFUSERS_PIPELINE_CLASS_MAP[pipeline_type]
+        else:
+            pipeline_cls = DiffusionPipeline
+
+        return self.from_pretrained(
+            pipeline_cls, local_files_only, directory=directory, model_id=model_id
+        )
+
+    def from_pretrained(
+        self, pipeline_cls, local_files_only, directory=None, model_id=None
     ):
         pretrained_model_name_or_path: str = model_id
         if (
@@ -117,19 +129,12 @@ class DiffusersPipelineFromPretrained:
         ):
             pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
 
-        if pipeline_type != "AUTO":
-            pipeline_cls = DIFFUSERS_PIPELINE_CLASS_MAP[pipeline_type]
-        else:
-            pipeline_cls = DiffusionPipeline
-
         pipeline = pipeline_cls.from_pretrained(
             pretrained_model_name_or_path=pretrained_model_name_or_path,
             safety_checker=None,
             torch_dtype=comfy.model_management.unet_dtype(),
             local_files_only=local_files_only,
         ).to(device=comfy.model_management.unet_offload_device())
-
-        pipeline.enable_vae_slicing()
 
         if comfy.model_management.xformers_enabled():
             pipeline.enable_xformers_memory_efficient_attention()
@@ -185,8 +190,6 @@ class DiffusersPipelineFromSingleFile:
             local_files_only=True,
             config_files=self.config_files,
         ).to(device=comfy.model_management.unet_offload_device())
-
-        pipeline.enable_vae_slicing()
 
         if comfy.model_management.xformers_enabled():
             pipeline.enable_xformers_memory_efficient_attention()

@@ -7,7 +7,7 @@ import comfy.model_management
 import comfy.model_patcher
 import comfy.utils
 
-from .....common import model_path_tool
+from .....common import path_tool
 from .....paper.arxiv.abs2312_13964.animatediff.models.resnet import InflatedConv3d
 from .....paper.arxiv.abs2312_13964.animatediff.models.unet import UNet3DConditionModel
 from .....paper.arxiv.abs2312_13964.animatediff.pipelines import I2VPipeline
@@ -48,7 +48,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         return {
             "required": {
                 "base_pipeline": ("DIFFUSERS_PIPELINE",),
-                "pia_unet_name": (model_path_tool.get_filename_list(__name__, "pia"),),
+                "pia_unet_name": (path_tool.get_model_filename_list(__name__, "pia"),),
             },
             "optional": {
                 "dreambooth_pipeline": ("DIFFUSERS_PIPELINE",),
@@ -61,7 +61,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
     CATEGORY = "playground/arxiv/abs2312_13964"
 
     def build_pipeline(self, base_pipeline, pia_unet_name, dreambooth_pipeline=None):
-        pia_unet_path = model_path_tool.get_full_path(__name__, "pia", pia_unet_name)
+        pia_unet_path = path_tool.get_model_full_path(__name__, "pia", pia_unet_name)
 
         pipeline_comfy_model_patcher_wrapper = base_pipeline
         diffusers_pipeline: StableDiffusionPipeline = (
@@ -226,7 +226,7 @@ class Abs2312_13964_DiffusersPipelineSampler:
                 for magnitude in mask_sim_range
             ]
 
-        generator = torch.Generator(device="cuda")
+        generator = torch.Generator(device=diffusers_pipeline.device)
         generator.manual_seed(seed)
         # seed_everything(config.generate.global_seed)
 

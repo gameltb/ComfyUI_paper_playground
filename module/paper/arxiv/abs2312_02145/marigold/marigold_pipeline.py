@@ -18,26 +18,26 @@
 # --------------------------------------------------------------------------
 
 
+import inspect
 from typing import Dict, Union
 
-import torch
-from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
-from tqdm.auto import tqdm
-from PIL import Image
-
+import torch
 from diffusers import (
-    DiffusionPipeline,
-    DDIMScheduler,
-    UNet2DConditionModel,
     AutoencoderKL,
+    DDIMScheduler,
+    DiffusionPipeline,
+    UNet2DConditionModel,
 )
 from diffusers.utils import BaseOutput
+from PIL import Image
+from torch.utils.data import DataLoader, TensorDataset
+from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 
-from .util.image_util import chw2hwc, colorize_depth_maps, resize_max_res
 from .util.batchsize import find_batch_size
 from .util.ensemble import ensemble_depths
+from .util.image_util import chw2hwc, colorize_depth_maps, resize_max_res
 
 
 class MarigoldDepthOutput(BaseOutput):
@@ -269,7 +269,12 @@ class MarigoldPipeline(DiffusionPipeline):
 
     @torch.no_grad()
     def single_infer(
-        self, rgb_in: torch.Tensor, num_inference_steps: int, show_pbar: bool
+        self,
+        rgb_in: torch.Tensor,
+        num_inference_steps: int,
+        show_pbar: bool,
+        generator=None,
+        eta=0.0,
     ) -> torch.Tensor:
         """
         Perform an individual depth prediction without ensembling.
@@ -284,6 +289,8 @@ class MarigoldPipeline(DiffusionPipeline):
         Returns:
             `torch.Tensor`: Predicted depth map.
         """
+        extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+
         device = rgb_in.device
 
         # Set timesteps
@@ -327,7 +334,9 @@ class MarigoldPipeline(DiffusionPipeline):
             ).sample  # [B, 4, h, w]
 
             # compute the previous noisy sample x_t -> x_t-1
-            depth_latent = self.scheduler.step(noise_pred, t, depth_latent).prev_sample
+            depth_latent = self.scheduler.step(
+                noise_pred, t, depth_latent, **extra_step_kwargs
+            ).prev_sample
         torch.cuda.empty_cache()
         depth = self.decode_depth(depth_latent)
 
@@ -376,3 +385,24 @@ class MarigoldPipeline(DiffusionPipeline):
         # mean of output channels
         depth_mean = stacked.mean(dim=1, keepdim=True)
         return depth_mean
+
+    def prepare_extra_step_kwargs(self, generator, eta):
+        # prepare extra kwargs for the scheduler step, since not all schedulers have the same signature
+        # eta (η) is only used with the DDIMScheduler, it will be ignored for other schedulers.
+        # eta corresponds to η in DDIM paper: https://arxiv.org/abs/2010.02502
+        # and should be between [0, 1]
+
+        accepts_eta = "eta" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
+        extra_step_kwargs = {}
+        if accepts_eta:
+            extra_step_kwargs["eta"] = eta
+
+        # check if the scheduler accepts generator
+        accepts_generator = "generator" in set(
+            inspect.signature(self.scheduler.step).parameters.keys()
+        )
+        if accepts_generator:
+            extra_step_kwargs["generator"] = generator
+        return extra_step_kwargs

@@ -154,18 +154,11 @@ class Abs2312_13964_DiffusersPipelineBuild:
             dtype=comfy.model_management.unet_dtype(),
         )
 
-        pia_pipeline.enable_vae_slicing()
-        pia_pipeline.enable_sequential_cpu_offload()
-
-        if comfy.model_management.xformers_enabled():
-            pia_pipeline.enable_xformers_memory_efficient_attention()
-
         pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
             pia_pipeline,
             load_device=comfy.model_management.get_torch_device(),
             offload_device=comfy.model_management.unet_offload_device(),
             size=1,
-            enable_sequential_cpu_offload=True,
         )
 
         return (pipeline_comfy_model_patcher_wrapper,)
@@ -226,7 +219,7 @@ class Abs2312_13964_DiffusersPipelineSampler:
                 for magnitude in mask_sim_range
             ]
 
-        generator = torch.Generator(device=diffusers_pipeline.device)
+        generator = torch.Generator(device=pipeline_comfy_model_patcher_wrapper.load_device)
         generator.manual_seed(seed)
         # seed_everything(config.generate.global_seed)
 

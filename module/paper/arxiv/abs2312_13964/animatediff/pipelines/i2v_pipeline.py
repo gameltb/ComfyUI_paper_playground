@@ -521,6 +521,7 @@ class I2VPipeline(DiffusionPipeline, IPAdapterMixin, TextualInversionLoaderMixin
             image = self.feature_extractor(image, return_tensors="pt").pixel_values
 
         image = image.to(device=device, dtype=dtype)
+        self.image_encoder.to(device=device)
         image_embeds = self.image_encoder(image).image_embeds
         image_embeds = image_embeds.repeat_interleave(num_images_per_prompt, dim=0)
 
@@ -647,13 +648,13 @@ class I2VPipeline(DiffusionPipeline, IPAdapterMixin, TextualInversionLoaderMixin
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
 
         # prepare for ip-adapter
-        if self.use_ip_adapter:
+        if hasattr(self, "image_encoder") and not getattr(self, "image_encoder", None) is None:
             image_embeds, neg_image_embeds = self.encode_image(raw_image, device, num_videos_per_prompt)
             image_embeds = torch.cat([neg_image_embeds, image_embeds])
             image_embeds = image_embeds.to(device=device, dtype=self.unet.dtype)
 
-            self.set_ip_adapter_scale(ip_adapter_scale)
-            print(f'Set IP-Adapter Scale as {ip_adapter_scale}')
+            # self.set_ip_adapter_scale(ip_adapter_scale)
+            # print(f'Set IP-Adapter Scale as {ip_adapter_scale}')
 
         else:
 

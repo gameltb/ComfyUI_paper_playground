@@ -65,6 +65,21 @@ def get_diffusers_component_folder_paths():
     return paths
 
 
+def get_diffusers_ip_adapter_paths():
+    paths = []
+    for folder_path in folder_paths.get_folder_paths("diffusers"):
+        ip_adapter_dir_path = os.path.join(folder_path, "IP-Adapter")
+        if os.path.exists(ip_adapter_dir_path):
+            for root, subdir, file in os.walk(ip_adapter_dir_path, followlinks=True):
+                for filename in file:
+                    full_path = os.path.join(root, filename)
+                    if filename.startswith("ip-adapter") and os.path.isfile(full_path):
+                        paths.append(
+                            full_path.removeprefix(folder_path).removeprefix(os.sep)
+                        )
+    return paths
+
+
 class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
     def __init__(self, *args, enable_sequential_cpu_offload=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -136,9 +151,6 @@ class DiffusersPipelineFromPretrained:
             local_files_only=local_files_only,
         ).to(device=comfy.model_management.unet_offload_device())
 
-        if comfy.model_management.xformers_enabled():
-            pipeline.enable_xformers_memory_efficient_attention()
-
         pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
             pipeline,
             load_device=comfy.model_management.get_torch_device(),
@@ -190,9 +202,6 @@ class DiffusersPipelineFromSingleFile:
             local_files_only=True,
             config_files=self.config_files,
         ).to(device=comfy.model_management.unet_offload_device())
-
-        if comfy.model_management.xformers_enabled():
-            pipeline.enable_xformers_memory_efficient_attention()
 
         pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
             pipeline,
@@ -443,6 +452,206 @@ class DiffusersPipelineComponentShow:
         return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
 
 
+class DiffusersPipelineOptimization:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+                "enable_vae_slicing": ("BOOLEAN", {"default": True}),
+                "enable_vae_tiling": ("BOOLEAN", {"default": False}),
+                "enable_model_cpu_offload": ("BOOLEAN", {"default": False}),
+                "enable_sequential_cpu_offload": ("BOOLEAN", {"default": False}),
+                "enable_xformers_memory_efficient_attention": (
+                    "BOOLEAN",
+                    {"default": True},
+                ),
+            }
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
+    FUNCTION = "optimization"
+
+    CATEGORY = "playground/tool"
+
+    def optimization(
+        self,
+        diffusers_pipeline,
+        enable_vae_slicing,
+        enable_vae_tiling,
+        enable_model_cpu_offload,
+        enable_sequential_cpu_offload,
+        enable_xformers_memory_efficient_attention,
+    ):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline: StableDiffusionPipeline = (
+            pipeline_comfy_model_patcher_wrapper.model
+        )
+
+        if enable_vae_slicing:
+            diffusers_pipeline.enable_vae_slicing()
+
+        if enable_vae_tiling:
+            diffusers_pipeline.enable_vae_tiling()
+
+        if enable_model_cpu_offload:
+            pipeline_comfy_model_patcher_wrapper.enable_sequential_cpu_offload = True
+            diffusers_pipeline.enable_model_cpu_offload()
+
+        if enable_sequential_cpu_offload:
+            pipeline_comfy_model_patcher_wrapper.enable_sequential_cpu_offload = True
+            diffusers_pipeline.enable_sequential_cpu_offload()
+
+        if (
+            enable_xformers_memory_efficient_attention
+            and comfy.model_management.xformers_enabled()
+        ):
+            diffusers_pipeline.enable_xformers_memory_efficient_attention()
+
+        return (pipeline_comfy_model_patcher_wrapper,)
+
+
+class DiffusersLoadLora:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "lora_name": (folder_paths.get_filename_list("loras"),),
+            }
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_LORA",)
+    FUNCTION = "load_lora"
+
+    CATEGORY = "playground/loaders"
+
+    def load_lora(self, lora_name):
+        lora_path = folder_paths.get_full_path("loras", lora_name)
+        lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+        return (lora,)
+
+
+class DiffusersPipelineLoadLoraWeights:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+                "diffusers_lora": ("DIFFUSERS_LORA",),
+            },
+            "optional": {
+                "adapter_name": ("STRING", {"default": ""}),
+            },
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
+    FUNCTION = "load_lora_weights"
+
+    CATEGORY = "playground/tool"
+
+    def load_lora_weights(self, diffusers_pipeline, diffusers_lora, adapter_name):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline: StableDiffusionPipeline = (
+            pipeline_comfy_model_patcher_wrapper.model
+        )
+        diffusers_lora = copy.copy(diffusers_lora)
+        adapter_name = (
+            adapter_name
+            if adapter_name != None and len(adapter_name.strip()) > 0
+            else None
+        )
+
+        diffusers_pipeline.load_lora_weights(diffusers_lora, adapter_name=adapter_name)
+
+        return (pipeline_comfy_model_patcher_wrapper,)
+
+
+class DiffusersPipelineLoadIPAdapter:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+            },
+            "optional": {
+                "ip_adapter_name": (get_diffusers_ip_adapter_paths(),),
+                "model_id": ("STRING", {"default": ""}),
+                "subfolder": ("STRING", {"default": ""}),
+                "weight_name": ("STRING", {"default": ""}),
+            },
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
+    FUNCTION = "load_ip_adapter"
+
+    CATEGORY = "playground/tool"
+
+    def load_ip_adapter(
+        self,
+        diffusers_pipeline,
+        ip_adapter_name=None,
+        model_id=None,
+        subfolder=None,
+        weight_name=None,
+    ):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline: StableDiffusionPipeline = (
+            pipeline_comfy_model_patcher_wrapper.model
+        )
+
+        pretrained_model_name_or_path: str = model_id
+        pretrained_model_full_path = model_id
+        if (
+            pretrained_model_name_or_path == None
+            or len(pretrained_model_name_or_path.strip()) == 0
+        ):
+            pretrained_model_full_path = find_full_diffusers_folder_path(
+                ip_adapter_name
+            )
+            pretrained_model_name_or_path = os.path.dirname(pretrained_model_full_path)
+            weight_name = os.path.basename(pretrained_model_full_path)
+            subfolder = ""
+
+        diffusers_pipeline.load_ip_adapter(
+            pretrained_model_name_or_path, weight_name=weight_name, subfolder=subfolder
+        )
+
+        return (pipeline_comfy_model_patcher_wrapper,)
+
+
+class DiffusersPipelineSetIPAdapterScale:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+                "ip_adapter_scale": (
+                    "FLOAT",
+                    {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01},
+                ),
+            }
+        }
+
+    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
+    FUNCTION = "set_ip_adapter_scale"
+
+    CATEGORY = "playground/tool"
+
+    def set_ip_adapter_scale(
+        self,
+        diffusers_pipeline,
+        ip_adapter_scale,
+    ):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline: StableDiffusionPipeline = (
+            pipeline_comfy_model_patcher_wrapper.model
+        )
+
+        diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
+
+        return (pipeline_comfy_model_patcher_wrapper,)
+
+
 NODE_CLASS_MAPPINGS = {
     "DiffusersPipelineFromSingleFile": DiffusersPipelineFromSingleFile,
     "DiffusersPipelineFromPretrained": DiffusersPipelineFromPretrained,
@@ -451,6 +660,11 @@ NODE_CLASS_MAPPINGS = {
     "DiffusersPipelineComponentSet": DiffusersPipelineComponentSet,
     "DiffusersPipelineComponentGet": DiffusersPipelineComponentGet,
     "DiffusersPipelineComponentShow": DiffusersPipelineComponentShow,
+    "DiffusersPipelineOptimization": DiffusersPipelineOptimization,
+    "DiffusersLoadLora": DiffusersLoadLora,
+    "DiffusersPipelineLoadLoraWeights": DiffusersPipelineLoadLoraWeights,
+    "DiffusersPipelineLoadIPAdapter": DiffusersPipelineLoadIPAdapter,
+    "DiffusersPipelineSetIPAdapterScale": DiffusersPipelineSetIPAdapterScale,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -462,4 +676,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DiffusersPipelineComponentSet": "Diffusers Pipeline Component Set",
     "DiffusersPipelineComponentGet": "Diffusers Pipeline Component Get",
     "DiffusersPipelineComponentShow": "Diffusers Pipeline Component Show",
+    "DiffusersPipelineOptimization": "Diffusers Pipeline Optimization",
+    "DiffusersLoadLora": "Diffusers Load Lora",
+    "DiffusersPipelineLoadLoraWeights": "Diffusers Pipeline Load Lora Weights",
+    "DiffusersPipelineLoadIPAdapter": "Diffusers Pipeline Load IP Adapter",
+    "DiffusersPipelineSetIPAdapterScale": "Diffusers Pipeline Set IP Adapter Scale",
 }

@@ -13,3 +13,11 @@ Put majicmixRealistic(https://civitai.com/models/43331) model to `ComfyUI/models
 ### Example
 
 ![](assets/abs2312_13964.png)
+
+## [Marigold: Repurposing Diffusion-Based Image Generators for Monocular Depth Estimation](https://github.com/prs-eth/Marigold)
+
+Put https://huggingface.co/Bingxin/Marigold to `ComfyUI/models/diffusers/Marigold`.  
+
+### Example
+
+![](assets/abs2312_02145.png)

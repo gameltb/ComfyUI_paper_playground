@@ -1,4 +1,5 @@
 import copy
+import inspect
 import json
 import os
 
@@ -11,11 +12,12 @@ import comfy.model_patcher
 import comfy.utils
 import folder_paths
 
+from ..utils import register_node
+
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
 DIFFUSERS_MODEL_CLASS_MAP = {}
 DIFFUSERS_SCHEDULER_CLASS_MAP = {}
 
-import inspect
 
 clsmembers = inspect.getmembers(diffusers, inspect.isclass)
 
@@ -100,6 +102,7 @@ class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
             self.current_device = device_to
 
 
+@register_node()
 class DiffusersPipelineFromPretrained:
     @classmethod
     def INPUT_TYPES(s):
@@ -161,6 +164,7 @@ class DiffusersPipelineFromPretrained:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersPipelineFromSingleFile:
     config_path = os.path.join(os.path.dirname(__file__), "diffusers_config")
     config_files = {
@@ -213,6 +217,7 @@ class DiffusersPipelineFromSingleFile:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersPipelineSamplerBase:
     @classmethod
     def INPUT_TYPES(s):
@@ -300,6 +305,7 @@ class DiffusersPipelineSamplerBase:
         return (output.images.permute(0, 2, 3, 1),)
 
 
+@register_node()
 class DiffusersComponentFromPretrained:
     @classmethod
     def INPUT_TYPES(s):
@@ -359,6 +365,7 @@ class DiffusersComponentFromPretrained:
         return (component,)
 
 
+@register_node()
 class DiffusersPipelineComponentSet:
     @classmethod
     def INPUT_TYPES(s):
@@ -403,6 +410,7 @@ class DiffusersPipelineComponentSet:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersPipelineComponentGet:
     @classmethod
     def INPUT_TYPES(s):
@@ -425,6 +433,7 @@ class DiffusersPipelineComponentGet:
         return (diffusers_pipeline.components.get(component_key),)
 
 
+@register_node()
 class DiffusersPipelineComponentShow:
     @classmethod
     def INPUT_TYPES(s):
@@ -452,6 +461,7 @@ class DiffusersPipelineComponentShow:
         return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
 
 
+@register_node()
 class DiffusersPipelineOptimization:
     @classmethod
     def INPUT_TYPES(s):
@@ -511,6 +521,7 @@ class DiffusersPipelineOptimization:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersLoadLora:
     @classmethod
     def INPUT_TYPES(s):
@@ -531,6 +542,7 @@ class DiffusersLoadLora:
         return (lora,)
 
 
+@register_node()
 class DiffusersPipelineLoadLoraWeights:
     @classmethod
     def INPUT_TYPES(s):
@@ -566,6 +578,7 @@ class DiffusersPipelineLoadLoraWeights:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersPipelineLoadIPAdapter:
     @classmethod
     def INPUT_TYPES(s):
@@ -619,6 +632,7 @@ class DiffusersPipelineLoadIPAdapter:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node()
 class DiffusersPipelineSetIPAdapterScale:
     @classmethod
     def INPUT_TYPES(s):
@@ -650,35 +664,3 @@ class DiffusersPipelineSetIPAdapterScale:
         diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
 
         return (pipeline_comfy_model_patcher_wrapper,)
-
-
-NODE_CLASS_MAPPINGS = {
-    "DiffusersPipelineFromSingleFile": DiffusersPipelineFromSingleFile,
-    "DiffusersPipelineFromPretrained": DiffusersPipelineFromPretrained,
-    "DiffusersComponentFromPretrained": DiffusersComponentFromPretrained,
-    "DiffusersPipelineSamplerBase": DiffusersPipelineSamplerBase,
-    "DiffusersPipelineComponentSet": DiffusersPipelineComponentSet,
-    "DiffusersPipelineComponentGet": DiffusersPipelineComponentGet,
-    "DiffusersPipelineComponentShow": DiffusersPipelineComponentShow,
-    "DiffusersPipelineOptimization": DiffusersPipelineOptimization,
-    "DiffusersLoadLora": DiffusersLoadLora,
-    "DiffusersPipelineLoadLoraWeights": DiffusersPipelineLoadLoraWeights,
-    "DiffusersPipelineLoadIPAdapter": DiffusersPipelineLoadIPAdapter,
-    "DiffusersPipelineSetIPAdapterScale": DiffusersPipelineSetIPAdapterScale,
-}
-
-# A dictionary that contains the friendly/humanly readable titles for the nodes
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "DiffusersPipelineFromSingleFile": "Diffusers Pipeline From Single File",
-    "DiffusersPipelineFromPretrained": "Diffusers Pipeline From Pretrained",
-    "DiffusersComponentFromPretrained": "Diffusers Component From Pretrained",
-    "DiffusersPipelineSamplerBase": "Diffusers Pipeline Sampler Base",
-    "DiffusersPipelineComponentSet": "Diffusers Pipeline Component Set",
-    "DiffusersPipelineComponentGet": "Diffusers Pipeline Component Get",
-    "DiffusersPipelineComponentShow": "Diffusers Pipeline Component Show",
-    "DiffusersPipelineOptimization": "Diffusers Pipeline Optimization",
-    "DiffusersLoadLora": "Diffusers Load Lora",
-    "DiffusersPipelineLoadLoraWeights": "Diffusers Pipeline Load Lora Weights",
-    "DiffusersPipelineLoadIPAdapter": "Diffusers Pipeline Load IP Adapter",
-    "DiffusersPipelineSetIPAdapterScale": "Diffusers Pipeline Set IP Adapter Scale",
-}

@@ -1,24 +1,12 @@
-import traceback 
-import sys 
+import sys
+import traceback
 
 WEB_DIRECTORY = "web"
 
-NODE_CLASS_MAPPINGS = {}
+try:
+    from .module.comfy.node import diffusers
+    from .module.comfy.node.paper.arxiv import abs2312_02145, abs2312_13964
+except Exception as e:
+    raise e
 
-# A dictionary that contains the friendly/humanly readable titles for the nodes
-NODE_DISPLAY_NAME_MAPPINGS = {}
-
-from .module.comfy.node import diffusers
-NODE_CLASS_MAPPINGS.update(diffusers.NODE_CLASS_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(diffusers.NODE_DISPLAY_NAME_MAPPINGS)
-
-from .module.comfy.node.paper.arxiv import abs2312_13964
-NODE_CLASS_MAPPINGS.update(abs2312_13964.NODE_CLASS_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(abs2312_13964.NODE_DISPLAY_NAME_MAPPINGS)
-
-from .module.comfy.node.paper.arxiv import abs2312_02145
-NODE_CLASS_MAPPINGS.update(abs2312_02145.NODE_CLASS_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(abs2312_02145.NODE_DISPLAY_NAME_MAPPINGS)
-
-if len(NODE_CLASS_MAPPINGS) == 0:
-    raise Exception("import failed")
+from .module.comfy.utils import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS

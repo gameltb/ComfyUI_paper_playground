@@ -5,6 +5,7 @@ import comfy.model_patcher
 import comfy.utils
 
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
+from ....utils import register_node
 from ...diffusers import DiffusersPipelineFromPretrained
 
 
@@ -22,7 +23,7 @@ def resize_max_res(img, max_edge_resolution: int):
     )
     return resized_img
 
-
+@register_node(display_name="Abs 2312.02145 Diffusers Pipeline From Pretrained")
 class Abs2312_02145_DiffusersPipelineFromPretrained(DiffusersPipelineFromPretrained):
     @classmethod
     def INPUT_TYPES(s):
@@ -43,7 +44,7 @@ class Abs2312_02145_DiffusersPipelineFromPretrained(DiffusersPipelineFromPretrai
             pipeline_cls, local_files_only, directory=directory, model_id=model_id
         )
 
-
+@register_node(display_name="Abs 2312.02145 Diffusers Pipeline Sampler")
 class Abs2312_02145_DiffusersPipelineSampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -106,15 +107,3 @@ class Abs2312_02145_DiffusersPipelineSampler:
         depth_pred = depth_pred.clip(0, 1)
 
         return (depth_pred[0],)
-
-
-NODE_CLASS_MAPPINGS = {
-    "Abs2312_02145_DiffusersPipelineSampler": Abs2312_02145_DiffusersPipelineSampler,
-    "Abs2312_02145_DiffusersPipelineFromPretrained": Abs2312_02145_DiffusersPipelineFromPretrained,
-}
-
-# A dictionary that contains the friendly/humanly readable titles for the nodes
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "Abs2312_02145_DiffusersPipelineSampler": "Abs 2312.02145 Diffusers Pipeline Sampler",
-    "Abs2312_02145_DiffusersPipelineFromPretrained": "Abs 2312.02145 Diffusers Pipeline From Pretrained",
-}

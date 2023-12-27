@@ -11,6 +11,7 @@ from .....common import path_tool
 from .....paper.arxiv.abs2312_13964.animatediff.models.resnet import InflatedConv3d
 from .....paper.arxiv.abs2312_13964.animatediff.models.unet import UNet3DConditionModel
 from .....paper.arxiv.abs2312_13964.animatediff.pipelines import I2VPipeline
+from ....utils import register_node
 from ...diffusers import DiffusersComfyModelPatcherWrapper
 
 
@@ -42,6 +43,7 @@ def UNet3DConditionModel_from_unet_2d(
     return model
 
 
+@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Build")
 class Abs2312_13964_DiffusersPipelineBuild:
     @classmethod
     def INPUT_TYPES(s):
@@ -164,6 +166,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
+@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Sampler")
 class Abs2312_13964_DiffusersPipelineSampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -219,7 +222,9 @@ class Abs2312_13964_DiffusersPipelineSampler:
                 for magnitude in mask_sim_range
             ]
 
-        generator = torch.Generator(device=pipeline_comfy_model_patcher_wrapper.load_device)
+        generator = torch.Generator(
+            device=pipeline_comfy_model_patcher_wrapper.load_device
+        )
         generator.manual_seed(seed)
         # seed_everything(config.generate.global_seed)
 
@@ -257,15 +262,3 @@ class Abs2312_13964_DiffusersPipelineSampler:
             ).videos
 
         return (sample[0].permute(1, 2, 3, 0),)
-
-
-NODE_CLASS_MAPPINGS = {
-    "Abs2312_13964_DiffusersPipelineSampler": Abs2312_13964_DiffusersPipelineSampler,
-    "Abs2312_13964_DiffusersPipelineBuild": Abs2312_13964_DiffusersPipelineBuild,
-}
-
-# A dictionary that contains the friendly/humanly readable titles for the nodes
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "Abs2312_13964_DiffusersPipelineSampler": "Abs 2312.13964 Diffusers Pipeline Sampler",
-    "Abs2312_13964_DiffusersPipelineBuild": "Abs 2312.13964 Diffusers Pipeline Build",
-}

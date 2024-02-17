@@ -11,7 +11,7 @@ from .....common import path_tool
 from .....paper.arxiv.abs2312_13964.animatediff.models.resnet import InflatedConv3d
 from .....paper.arxiv.abs2312_13964.animatediff.models.unet import UNet3DConditionModel
 from .....paper.arxiv.abs2312_13964.animatediff.pipelines import I2VPipeline
-from ....utils import register_node
+from ....registry import register_node
 from ...diffusers import DiffusersComfyModelPatcherWrapper
 
 

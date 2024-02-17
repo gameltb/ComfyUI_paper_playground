@@ -5,7 +5,7 @@ import comfy.model_patcher
 import comfy.utils
 
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
-from ....utils import register_node
+from ....registry import register_node
 from ...diffusers import DiffusersPipelineFromPretrained
 
 

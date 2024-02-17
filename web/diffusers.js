@@ -5,7 +5,10 @@ import { api } from "/scripts/api.js";
 app.registerExtension({
   name: "gameltb.diffusers",
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (nodeData.name === "DiffusersPipelineComponentShow") {
+    if (
+      nodeData.name === "DiffusersPipelineComponentShow" ||
+      nodeData.name === "DiffusersPipelineListAdapters"
+    ) {
       const onExecuted = nodeType.prototype.onExecuted;
       nodeType.prototype.onExecuted = function (message) {
         const r = onExecuted?.apply?.(this, arguments);

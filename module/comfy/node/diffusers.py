@@ -12,7 +12,7 @@ import comfy.model_patcher
 import comfy.utils
 import folder_paths
 
-from ..utils import register_node
+from ..registry import register_node
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
 DIFFUSERS_MODEL_CLASS_MAP = {}
@@ -459,7 +459,29 @@ class DiffusersPipelineComponentShow:
             components_map[k] = str(type(v))
 
         return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
+    
+@register_node()
+class DiffusersPipelineListAdapters:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
+            }
+        }
 
+    RETURN_TYPES = ()
+    FUNCTION = "list_adapters"
+
+    OUTPUT_NODE = True
+
+    CATEGORY = "playground/tool"
+
+    def list_adapters(self, diffusers_pipeline):
+        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
+
+        return {"ui": {"components_map": [json.dumps(diffusers_pipeline.get_list_adapters(), indent=4)]}}
 
 @register_node()
 class DiffusersPipelineOptimization:

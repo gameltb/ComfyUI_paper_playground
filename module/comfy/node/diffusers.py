@@ -13,6 +13,7 @@ import comfy.utils
 import folder_paths
 
 from ..registry import register_node
+from ..types import Combo, Bool, String, ComfyWidgetType, IMAGE, Int, Float, LATENT
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
 DIFFUSERS_MODEL_CLASS_MAP = {}
@@ -76,9 +77,7 @@ def get_diffusers_ip_adapter_paths():
                 for filename in file:
                     full_path = os.path.join(root, filename)
                     if filename.startswith("ip-adapter") and os.path.isfile(full_path):
-                        paths.append(
-                            full_path.removeprefix(folder_path).removeprefix(os.sep)
-                        )
+                        paths.append(full_path.removeprefix(folder_path).removeprefix(os.sep))
     return paths
 
 
@@ -102,207 +101,126 @@ class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
             self.current_device = device_to
 
 
-@register_node()
-class DiffusersPipelineFromPretrained:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pipeline_type": (
-                    ["AUTO"] + list(DIFFUSERS_PIPELINE_CLASS_MAP.keys()),
-                    {"default": StableDiffusionPipeline.__name__},
-                ),
-                "local_files_only": ("BOOLEAN", {"default": True}),
-            },
-            "optional": {
-                "directory": (get_diffusers_folder_paths(),),
-                "model_id": ("STRING", {"default": ""}),
-            },
-        }
-
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "diffusers_from_pretrained"
-
-    CATEGORY = "playground/loaders"
-
-    def diffusers_from_pretrained(
-        self, pipeline_type, local_files_only, directory=None, model_id=None
-    ):
-        if pipeline_type != "AUTO":
-            pipeline_cls = DIFFUSERS_PIPELINE_CLASS_MAP[pipeline_type]
-        else:
-            pipeline_cls = DiffusionPipeline
-
-        return self.from_pretrained(
-            pipeline_cls, local_files_only, directory=directory, model_id=model_id
-        )
-
-    def from_pretrained(
-        self, pipeline_cls, local_files_only, directory=None, model_id=None
-    ):
-        pretrained_model_name_or_path: str = model_id
-        if (
-            pretrained_model_name_or_path == None
-            or len(pretrained_model_name_or_path.strip()) == 0
-        ):
-            pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
-
-        pipeline = pipeline_cls.from_pretrained(
-            pretrained_model_name_or_path=pretrained_model_name_or_path,
-            safety_checker=None,
-            torch_dtype=comfy.model_management.unet_dtype(),
-            local_files_only=local_files_only,
-        ).to(device=comfy.model_management.unet_offload_device())
-
-        pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-            pipeline,
-            load_device=comfy.model_management.get_torch_device(),
-            offload_device=comfy.model_management.unet_offload_device(),
-            size=1,
-        )
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+class DIFFUSERS_PIPELINE(ComfyWidgetType):
+    TYPE = "DIFFUSERS_PIPELINE"
 
 
-@register_node()
-class DiffusersPipelineFromSingleFile:
-    config_path = os.path.join(os.path.dirname(__file__), "diffusers_config")
-    config_files = {
-        "v1": os.path.join(config_path, "v1-inference.yaml"),
-        "v2": os.path.join(config_path, "v2-inference-v.yaml"),
-        "xl": os.path.join(config_path, "sd_xl_base.yaml"),
-        "xl_refiner": os.path.join(config_path, "sd_xl_refiner.yaml"),
-    }
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "pipeline_type": (
-                    ["AUTO"] + list(DIFFUSERS_PIPELINE_CLASS_MAP.keys()),
-                    {"default": StableDiffusionPipeline.__name__},
-                ),
-                "ckpt_name": (folder_paths.get_filename_list("checkpoints"),),
-            },
-        }
-
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "from_single_file"
-
-    CATEGORY = "playground/loaders"
-
-    def from_single_file(self, pipeline_type, ckpt_name):
-        ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
-
-        if pipeline_type != "AUTO":
-            pipeline_cls = DIFFUSERS_PIPELINE_CLASS_MAP[pipeline_type]
-        else:
-            pipeline_cls = StableDiffusionPipeline
-
-        pipeline = pipeline_cls.from_single_file(
-            ckpt_path,
-            load_safety_checker=None,
-            torch_dtype=comfy.model_management.unet_dtype(),
-            local_files_only=True,
-            config_files=self.config_files,
-        ).to(device=comfy.model_management.unet_offload_device())
-
-        pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-            pipeline,
-            load_device=comfy.model_management.get_torch_device(),
-            offload_device=comfy.model_management.unet_offload_device(),
-            size=1,
-        )
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+@register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")
+def diffusers_from_pretrained(
+    pipeline_type: Combo(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = DiffusionPipeline.__name__,
+    local_files_only: Bool() = True,
+    directory: Combo(choices={p: p for p in get_diffusers_folder_paths()}) = None,
+    model_id: String() = "",
+) -> (DIFFUSERS_PIPELINE(),):
+    pipeline_cls = pipeline_type
+    return diffusers_from_pretrained_cls(pipeline_cls, local_files_only, directory=directory, model_id=model_id)
 
 
-@register_node()
-class DiffusersPipelineSamplerBase:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
-                "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
-                "cfg": (
-                    "FLOAT",
-                    {
-                        "default": 8.0,
-                        "min": 0.0,
-                        "max": 100.0,
-                        "step": 0.1,
-                        "round": 0.01,
-                    },
-                ),
-                "scheduler": (
-                    ["PIPELINE_DEFAULT"] + list(DIFFUSERS_SCHEDULER_CLASS_MAP.keys()),
-                ),
-                "latent_image": ("LATENT",),
-                "denoise": (
-                    "FLOAT",
-                    {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01},
-                ),
-                "positive_prompt": ("STRING", {"multiline": True}),
-                "negative_prompt": ("STRING", {"multiline": True}),
-            }
-        }
+def diffusers_from_pretrained_cls(pipeline_cls, local_files_only=True, directory=None, model_id=None):
+    pretrained_model_name_or_path: str = model_id
+    if pretrained_model_name_or_path is None or len(pretrained_model_name_or_path.strip()) == 0:
+        pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
 
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "do_pipeline"
+    pipeline = pipeline_cls.from_pretrained(
+        pretrained_model_name_or_path=pretrained_model_name_or_path,
+        safety_checker=None,
+        torch_dtype=comfy.model_management.unet_dtype(),
+        local_files_only=local_files_only,
+    ).to(device=comfy.model_management.unet_offload_device())
 
-    CATEGORY = "playground/sampling"
+    pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
+        pipeline,
+        load_device=comfy.model_management.get_torch_device(),
+        offload_device=comfy.model_management.unet_offload_device(),
+        size=1,
+    )
 
-    def do_pipeline(
-        self,
-        diffusers_pipeline,
-        positive_prompt,
-        negative_prompt,
-        seed,
-        steps,
-        cfg,
-        scheduler,
-        latent_image,
-        denoise,
-    ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        latent = latent_image["samples"]
-        batch, _, height, width = latent.shape
-        generator = torch.Generator(device="cuda").manual_seed(seed)
-        output_type = "pt"
-        if False:
-            output_type = "latent"
+    return (pipeline_comfy_model_patcher_wrapper,)
 
-        comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
 
-        diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
+SINGLE_FILE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "diffusers_config")
+SINGLE_FILE_CONFIG_FILES = {
+    "v1": os.path.join(SINGLE_FILE_CONFIG_PATH, "v1-inference.yaml"),
+    "v2": os.path.join(SINGLE_FILE_CONFIG_PATH, "v2-inference-v.yaml"),
+    "xl": os.path.join(SINGLE_FILE_CONFIG_PATH, "sd_xl_base.yaml"),
+    "xl_refiner": os.path.join(SINGLE_FILE_CONFIG_PATH, "sd_xl_refiner.yaml"),
+}
 
-        if scheduler != "PIPELINE_DEFAULT":
-            diffusers_pipeline.scheduler = DIFFUSERS_SCHEDULER_CLASS_MAP[
-                scheduler
-            ].from_config(diffusers_pipeline.scheduler.config)
 
-        pbar = comfy.utils.ProgressBar(steps)
+@register_node(identifier="DiffusersPipelineFromSingleFile", category="loaders")
+def diffusers_from_single_file(
+    pipeline_type: Combo(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = StableDiffusionPipeline.__name__,
+    ckpt_name: Combo(choices={p: p for p in folder_paths.get_filename_list("checkpoints")}) = None,
+    single_file_config_file: Combo(choices=SINGLE_FILE_CONFIG_FILES) = None,
+) -> (DIFFUSERS_PIPELINE(),):
+    pipeline_cls: StableDiffusionPipeline = pipeline_type
+    ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
 
-        def callback_on_step_end(self, i, t, callback_kwargs):
-            pbar.update(i)
-            return {}
+    pipeline = pipeline_cls.from_single_file(
+        ckpt_path,
+        load_safety_checker=None,
+        torch_dtype=comfy.model_management.unet_dtype(),
+        local_files_only=True,
+        original_config_file=single_file_config_file,
+    ).to(device=comfy.model_management.unet_offload_device())
 
-        output = diffusers_pipeline(
-            prompt=positive_prompt,
-            height=height * 8,
-            width=width * 8,
-            num_inference_steps=steps,
-            guidance_scale=cfg,
-            negative_prompt=negative_prompt,
-            num_images_per_prompt=batch,
-            generator=generator,
-            output_type=output_type,
-            callback_on_step_end=callback_on_step_end,
-        )
+    pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
+        pipeline,
+        load_device=comfy.model_management.get_torch_device(),
+        offload_device=comfy.model_management.unet_offload_device(),
+        size=1,
+    )
 
-        return (output.images.permute(0, 2, 3, 1),)
+    return (pipeline_comfy_model_patcher_wrapper,)
+
+
+@register_node(identifier="DiffusersPipelineSamplerBase", category="sampling")
+def diffusers_sampler_base(
+    diffusers_pipeline: DIFFUSERS_PIPELINE(),
+    seed: Int(min=0, max=0xFFFFFFFFFFFFFFFF) = 0,
+    steps: Int(min=1, max=10000) = 20,
+    cfg: Float(min=0.0, max=100.0, step=0.1, round=0.01) = 8.0,
+    scheduler: Combo(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
+    latent_image: LATENT() = None,
+    denoise: Float(min=0.0, max=1.0, step=0.01) = 1.0,
+    positive_prompt: String(multiline=True) = "",
+    negative_prompt: String(multiline=True) = "",
+) -> (IMAGE(),):
+    pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
+    latent = latent_image["samples"]
+    batch, _, height, width = latent.shape
+    generator = torch.Generator(device="cuda").manual_seed(seed)
+    output_type = "pt"
+    if False:
+        output_type = "latent"
+
+    comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
+
+    diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
+
+    if scheduler is not None:
+        diffusers_pipeline.scheduler = scheduler.from_config(diffusers_pipeline.scheduler.config)
+
+    pbar = comfy.utils.ProgressBar(steps)
+
+    def callback_on_step_end(self, i, t, callback_kwargs):
+        pbar.update(i)
+        return {}
+
+    output = diffusers_pipeline(
+        prompt=positive_prompt,
+        height=height * 8,
+        width=width * 8,
+        num_inference_steps=steps,
+        guidance_scale=cfg,
+        negative_prompt=negative_prompt,
+        num_images_per_prompt=batch,
+        generator=generator,
+        output_type=output_type,
+        callback_on_step_end=callback_on_step_end,
+    )
+
+    return (output.images.permute(0, 2, 3, 1),)
 
 
 @register_node()
@@ -312,9 +230,7 @@ class DiffusersComponentFromPretrained:
         return {
             "required": {
                 "component_type": (
-                    ["AUTO"]
-                    + list(DIFFUSERS_MODEL_CLASS_MAP.keys())
-                    + list(DIFFUSERS_SCHEDULER_CLASS_MAP.keys()),
+                    ["AUTO"] + list(DIFFUSERS_MODEL_CLASS_MAP.keys()) + list(DIFFUSERS_SCHEDULER_CLASS_MAP.keys()),
                 ),
                 "local_files_only": ("BOOLEAN", {"default": True}),
             },
@@ -339,10 +255,7 @@ class DiffusersComponentFromPretrained:
         subfolder=None,
     ):
         pretrained_model_name_or_path: str = model_id
-        if (
-            pretrained_model_name_or_path == None
-            or len(pretrained_model_name_or_path.strip()) == 0
-        ):
+        if pretrained_model_name_or_path == None or len(pretrained_model_name_or_path.strip()) == 0:
             pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
 
         if subfolder != None and len(subfolder.strip()) == 0:
@@ -384,9 +297,7 @@ class DiffusersPipelineComponentSet:
 
     def set_component(self, diffusers_pipeline, diffusers_component, component_key):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         diffusers_component.to(dtype=diffusers_pipeline.dtype)
 
@@ -459,7 +370,8 @@ class DiffusersPipelineComponentShow:
             components_map[k] = str(type(v))
 
         return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
-    
+
+
 @register_node()
 class DiffusersPipelineListAdapters:
     @classmethod
@@ -482,6 +394,7 @@ class DiffusersPipelineListAdapters:
         diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         return {"ui": {"components_map": [json.dumps(diffusers_pipeline.get_list_adapters(), indent=4)]}}
+
 
 @register_node()
 class DiffusersPipelineOptimization:
@@ -516,9 +429,7 @@ class DiffusersPipelineOptimization:
         enable_xformers_memory_efficient_attention,
     ):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         if enable_vae_slicing:
             diffusers_pipeline.enable_vae_slicing()
@@ -534,10 +445,7 @@ class DiffusersPipelineOptimization:
             pipeline_comfy_model_patcher_wrapper.enable_sequential_cpu_offload = True
             diffusers_pipeline.enable_sequential_cpu_offload()
 
-        if (
-            enable_xformers_memory_efficient_attention
-            and comfy.model_management.xformers_enabled()
-        ):
+        if enable_xformers_memory_efficient_attention and comfy.model_management.xformers_enabled():
             diffusers_pipeline.enable_xformers_memory_efficient_attention()
 
         return (pipeline_comfy_model_patcher_wrapper,)
@@ -585,15 +493,9 @@ class DiffusersPipelineLoadLoraWeights:
 
     def load_lora_weights(self, diffusers_pipeline, diffusers_lora, adapter_name):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
         diffusers_lora = copy.copy(diffusers_lora)
-        adapter_name = (
-            adapter_name
-            if adapter_name != None and len(adapter_name.strip()) > 0
-            else None
-        )
+        adapter_name = adapter_name if adapter_name != None and len(adapter_name.strip()) > 0 else None
 
         diffusers_pipeline.load_lora_weights(diffusers_lora, adapter_name=adapter_name)
 
@@ -630,26 +532,17 @@ class DiffusersPipelineLoadIPAdapter:
         weight_name=None,
     ):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         pretrained_model_name_or_path: str = model_id
         pretrained_model_full_path = model_id
-        if (
-            pretrained_model_name_or_path == None
-            or len(pretrained_model_name_or_path.strip()) == 0
-        ):
-            pretrained_model_full_path = find_full_diffusers_folder_path(
-                ip_adapter_name
-            )
+        if pretrained_model_name_or_path == None or len(pretrained_model_name_or_path.strip()) == 0:
+            pretrained_model_full_path = find_full_diffusers_folder_path(ip_adapter_name)
             pretrained_model_name_or_path = os.path.dirname(pretrained_model_full_path)
             weight_name = os.path.basename(pretrained_model_full_path)
             subfolder = ""
 
-        diffusers_pipeline.load_ip_adapter(
-            pretrained_model_name_or_path, weight_name=weight_name, subfolder=subfolder
-        )
+        diffusers_pipeline.load_ip_adapter(pretrained_model_name_or_path, weight_name=weight_name, subfolder=subfolder)
 
         return (pipeline_comfy_model_patcher_wrapper,)
 
@@ -679,9 +572,7 @@ class DiffusersPipelineSetIPAdapterScale:
         ip_adapter_scale,
     ):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
 

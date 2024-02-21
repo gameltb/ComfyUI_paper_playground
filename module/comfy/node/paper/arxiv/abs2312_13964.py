@@ -43,7 +43,7 @@ def UNet3DConditionModel_from_unet_2d(
     return model
 
 
-@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Build")
+@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Build (PIA)")
 class Abs2312_13964_DiffusersPipelineBuild:
     @classmethod
     def INPUT_TYPES(s):
@@ -69,7 +69,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         diffusers_pipeline: StableDiffusionPipeline = (
             pipeline_comfy_model_patcher_wrapper.model
         )
-        if dreambooth_pipeline != None:
+        if dreambooth_pipeline is not None:
             dreambooth_pipeline_comfy_model_patcher_wrapper = dreambooth_pipeline
             dreambooth_pipeline: StableDiffusionPipeline = (
                 dreambooth_pipeline_comfy_model_patcher_wrapper.model
@@ -120,7 +120,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         tokenizer = diffusers_pipeline.components.get("tokenizer")
         text_encoder = diffusers_pipeline.components.get("text_encoder")
 
-        if dreambooth_pipeline != None:
+        if dreambooth_pipeline is not None:
             # load unet
             converted_unet_checkpoint = dreambooth_pipeline.components.get(
                 "unet"
@@ -166,7 +166,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         return (pipeline_comfy_model_patcher_wrapper,)
 
 
-@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Sampler")
+@register_node(display_name="Abs 2312.13964 Diffusers Pipeline Sampler (PIA)")
 class Abs2312_13964_DiffusersPipelineSampler:
     @classmethod
     def INPUT_TYPES(s):

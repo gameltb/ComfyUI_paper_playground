@@ -6,45 +6,34 @@ import comfy.utils
 
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
 from ....registry import register_node
-from ...diffusers import DiffusersPipelineFromPretrained
+from ...diffusers import DIFFUSERS_PIPELINE, diffusers_from_pretrained_cls, get_diffusers_folder_paths
+from ....types import Combo
 
 
 def resize_max_res(img, max_edge_resolution: int):
     B, C, original_height, original_width = img.shape
-    downscale_factor = min(
-        max_edge_resolution / original_width, max_edge_resolution / original_height
-    )
+    downscale_factor = min(max_edge_resolution / original_width, max_edge_resolution / original_height)
 
     new_width = int(original_width * downscale_factor)
     new_height = int(original_height * downscale_factor)
 
-    resized_img = comfy.utils.common_upscale(
-        img, new_width, new_height, "nearest-exact", ""
-    )
+    resized_img = comfy.utils.common_upscale(img, new_width, new_height, "nearest-exact", "")
     return resized_img
 
-@register_node(display_name="Abs 2312.02145 Diffusers Pipeline From Pretrained")
-class Abs2312_02145_DiffusersPipelineFromPretrained(DiffusersPipelineFromPretrained):
-    @classmethod
-    def INPUT_TYPES(s):
-        input_types = super().INPUT_TYPES()
-        input_types["required"].pop("pipeline_type")
-        return input_types
 
-    FUNCTION = "abs2312_02145_from_pretrained"
+@register_node(
+    identifier="Abs2312_02145_DiffusersPipelineFromPretrained",
+    display_name="Abs 2312.02145 Diffusers Pipeline From Pretrained (Marigold)",
+    category="arxiv/abs2312_02145",
+)
+def abs2312_02145_from_pretrained(
+    directory: Combo(choices={p: p for p in get_diffusers_folder_paths()}) = None,
+) -> (DIFFUSERS_PIPELINE(),):
+    pipeline_cls = MarigoldPipeline
+    return diffusers_from_pretrained_cls(pipeline_cls, True, directory=directory, model_id=None)
 
-    CATEGORY = "playground/arxiv/abs2312_02145"
 
-    def abs2312_02145_from_pretrained(
-        self, local_files_only, directory=None, model_id=None
-    ):
-        pipeline_cls = MarigoldPipeline
-
-        return self.from_pretrained(
-            pipeline_cls, local_files_only, directory=directory, model_id=model_id
-        )
-
-@register_node(display_name="Abs 2312.02145 Diffusers Pipeline Sampler")
+@register_node(display_name="Abs 2312.02145 Diffusers Pipeline Sampler (Marigold)")
 class Abs2312_02145_DiffusersPipelineSampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -72,9 +61,7 @@ class Abs2312_02145_DiffusersPipelineSampler:
         max_resolution,
     ):
         pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: MarigoldPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
+        diffusers_pipeline: MarigoldPipeline = pipeline_comfy_model_patcher_wrapper.model
 
         comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
 

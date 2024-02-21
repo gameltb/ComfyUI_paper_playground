@@ -1,6 +1,6 @@
 # PIA：Personalized Image Animator
 
-[**PIA: Your Personalized Image Animator via Plug-and-Play Modules in Text-to-Image Models**](https://arxiv.org)
+[**PIA: Your Personalized Image Animator via Plug-and-Play Modules in Text-to-Image Models**](https://arxiv.org/abs/2312.13964)
 
 [Yiming Zhang†](https://github.com/ymzhang0319), [Zhening Xing†](https://github.com/LeoXing1996/), [Yanhong Zeng](https://zengyh1900.github.io/), [Youqing Fang](https://github.com/FangYouqing), [Kai Chen*](https://chenkai.site/)
 
@@ -10,13 +10,31 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2312.13964-b31b1b.svg)](https://arxiv.org/abs/2312.13964)
 [![Project Page](https://img.shields.io/badge/PIA-Website-green)](https://pi-animator.github.io)
 [![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_app.svg)](https://openxlab.org.cn/apps/detail/zhangyiming/PiaPia)
+[![Third Party Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/camenduru/PIA-colab/blob/main/PIA_colab.ipynb)
+[![HuggingFace Model](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-blue)](https://huggingface.co/Leoxing/PIA)
+<a target="_blank" href="https://huggingface.co/spaces/Leoxing/PIA">
+  <img src="https://huggingface.co/datasets/huggingface/badges/raw/main/open-in-hf-spaces-sm.svg" alt="Open in HugginFace"/>
+</a>
+[![Replicate](https://replicate.com/cjwbw/pia/badge)](https://replicate.com/cjwbw/pia) 
+
+You may also want to try other project from our team:
+<a target="_blank" href="https://github.com/open-mmlab/mmagic">
+  <img src="https://github.com/open-mmlab/mmagic/assets/28132635/15aab910-f5c4-4b76-af9d-fe8eead1d930" height=20 alt="MMagic"/>
+</a>
 
 PIA is a personalized image animation method which can generate videos with **high motion controllability** and **strong text and image alignment**.
-
 
 <img src="__assets__/image_animation/teaser/teaser.gif">
 
 ## What's New
+[2024/01/03] Add [Replicate Demo & API](https://replicate.com/cjwbw/pia)!
+
+[2024/01/03] Add third-party [Colab](https://github.com/camenduru/PIA-colab)!
+
+[2023/12/28] PIA can animate a 1024x1024 image with just 16GB of GPU memory with `scaled_dot_product_attention`!
+
+[2023/12/25] HuggingFace demo is available now! [🤗 Hub](https://huggingface.co/spaces/Leoxing/PIA/)
+
 [2023/12/22] Release the model and demo of PIA. Try it to make your personalized movie!
 
 - Online Demo on [OpenXLab](https://openxlab.org.cn/apps/detail/zhangyiming/PiaPia)
@@ -24,10 +42,22 @@ PIA is a personalized image animation method which can generate videos with **hi
 
 ## Setup
 ### Prepare Environment
+
+Use the following command to install Pytorch==2.0.0 and other dependencies:
+
+```
+conda env create -f environment-pt2.yaml
+conda activate pia
+```
+
+If you want to use lower version of Pytorch (e.g. 1.13.1), you can use the following command:
+
 ```
 conda env create -f environment.yaml
 conda activate pia
 ```
+
+We strongly recommand you to use Pytorch==2.0.0 which supports `scaled_dot_product_attention` for memory-efficient image animation.
 
 ### Download checkpoints
 <li>Download the Stable Diffusion v1-5</li>
@@ -52,7 +82,8 @@ bash download_bashscripts/0-PIA.sh
 ```
 
 
-You can also download *pia.ckpt* through this link on [Google Drive](https://drive.google.com/file/d/1RL3Fp0Q6pMD8PbGPULYUnvjqyRQXGHwN/view?usp=drive_link)
+You can also download *pia.ckpt* through link on [Google Drive](https://drive.google.com/file/d/1RL3Fp0Q6pMD8PbGPULYUnvjqyRQXGHwN/view?usp=drive_link)
+or [HuggingFace](https://huggingface.co/Leoxing/PIA).
 
 Put checkpoints as follows:
 ```

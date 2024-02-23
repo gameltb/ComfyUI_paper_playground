@@ -12,12 +12,28 @@ PACK_UID = None
 
 
 class NodeTemplate:
-    _INPUT_TYPES = None
+    _FUNCTION_SIG = None
     FUNCTION = "exec"
 
     @classmethod
     def INPUT_TYPES(cls):
-        return cls._INPUT_TYPES
+        input_types = {"required": {}, "optional": {}}
+        for k, v in cls._FUNCTION_SIG.parameters.items():
+            t = v.annotation
+            assert isinstance(t, ComfyWidgetType)
+            opts = {}
+            req = "required" if t.required else "optional"
+            opts = t.opts()
+
+            if inspect.isfunction(opts):
+                opts = opts()
+
+            t = t.type
+            if v.default is not inspect._empty:
+                opts["default"] = v.default
+
+            input_types[req][k] = (t, opts)
+        return input_types
 
 
 def set_pack_options(uid: str, category: str = None):
@@ -41,29 +57,13 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         if inspect.isfunction(f):
             node_attrs = {}
             node_attrs["OUTPUT_NODE"] = output
-            node_attrs["_INPUT_TYPES"] = {"required": {}, "optional": {}}
 
             sig = inspect.signature(f)
+            node_attrs["_FUNCTION_SIG"] = sig
 
             node_attrs["RETURN_TYPES"] = tuple(
                 x.type if isinstance(x, ComfyWidgetType) else x for x in sig.return_annotation
             )
-
-            for k, v in sig.parameters.items():
-                t = v.annotation
-
-                assert isinstance(t, ComfyWidgetType)
-
-                opts = {}
-                req = "required" if t.required else "optional"
-                opts = t.opts()
-                t = t.type
-                if v.default is inspect._empty:
-                    opts["forceInput"] = True
-                else:
-                    opts["default"] = v.default
-
-                node_attrs["_INPUT_TYPES"][req][k] = (t, opts)
 
             cat_list = []
             if PACK_BASE_CATEGORY is not None:

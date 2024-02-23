@@ -1,6 +1,6 @@
 from torch import nn
 
-from hybrik.utils import Registry, build_from_cfg
+from ..utils import Registry, build_from_cfg
 
 
 SPPE = Registry('sppe')

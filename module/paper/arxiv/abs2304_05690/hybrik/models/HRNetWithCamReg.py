@@ -1,4 +1,4 @@
-from easydict import EasyDict as edict
+from ..utils.easydict import EasyDict as edict
 
 import numpy as np
 import torch
@@ -9,7 +9,7 @@ from .builder import SPPE
 from .layers.smpl.SMPL import SMPL_layer
 from .layers.hrnet.hrnet import get_hrnet
 
-from hybrik.utils.transforms import flip_coord
+from ..utils.transforms import flip_coord
 
 
 def flip(x):

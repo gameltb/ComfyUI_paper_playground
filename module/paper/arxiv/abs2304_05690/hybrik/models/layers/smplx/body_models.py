@@ -24,7 +24,7 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-from easydict import EasyDict as edict
+from ....utils.easydict import EasyDict as edict
 
 from .lbs import (
     lbs, vertices2landmarks, find_dynamic_lmk_idx_and_bcoords, blend_shapes, hybrik, lbs_get_twist, mat2quat)

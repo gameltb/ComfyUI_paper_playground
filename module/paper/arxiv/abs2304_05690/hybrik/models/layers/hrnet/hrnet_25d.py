@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
-from easydict import EasyDict as edict
+from ....utils.easydict import EasyDict as edict
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)

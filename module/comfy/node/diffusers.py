@@ -5,7 +5,7 @@ import os
 
 import diffusers
 import torch
-from diffusers import DiffusionPipeline, StableDiffusionPipeline, UNet2DConditionModel
+from diffusers import DiffusionPipeline, StableDiffusionPipeline
 
 import comfy.model_management
 import comfy.model_patcher
@@ -33,6 +33,10 @@ for cls_name, cls in clsmembers:
             DIFFUSERS_SCHEDULER_CLASS_MAP[cls_name] = cls
     # else:
     #     print("not register: ", cls)
+
+
+class DIFFUSERS_PIPELINE(ComfyWidgetType):
+    TYPE = "DIFFUSERS_PIPELINE"
 
 
 def get_diffusers_folder_paths():
@@ -99,10 +103,6 @@ class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
             if not self.enable_sequential_cpu_offload:
                 self.model.to(device=device_to)
             self.current_device = device_to
-
-
-class DIFFUSERS_PIPELINE(ComfyWidgetType):
-    TYPE = "DIFFUSERS_PIPELINE"
 
 
 @register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")

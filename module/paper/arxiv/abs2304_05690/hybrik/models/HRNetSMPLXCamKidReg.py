@@ -1,17 +1,44 @@
 import torch
 import torch.nn as nn
-from easydict import EasyDict as edict
 from torch.nn import functional as F
 
-from hybrik.models.layers.smplx.body_models import SMPLXLayer
-from hybrik.utils.transforms import flip_coord
+from ..utils.transforms import flip_coord
+from ..models.layers.smplx.load_body_models import load_models
 
 from .builder import SPPE
 from .layers.hrnet.hrnet import get_hrnet
+from dataclasses import dataclass
+
+
+@dataclass
+class HRNetSMPLXCamKidRegFrame:
+    pred_phi: object
+    pred_shape_full: object
+    pred_beta: object
+    pred_expression: object
+    pred_theta_quat: object
+    pred_theta_mat: object
+    pred_lh_uvd: object
+    pred_rh_uvd: object
+    pred_uvd_jts: object
+    pred_xyz_hybrik: object
+    pred_xyz_hybrik_struct: object
+    pred_xyz_full: object
+    pred_uv_full: object
+    pred_vertices: object
+    pred_sigma: object
+    scores: object
+    maxvals: object
+    cam_scale: object
+    cam_root: object
+    transl: object
+    img_feat: object
+    pred_camera: object
+    gt_output: object
 
 
 def flip(x):
-    assert (x.dim() == 3 or x.dim() == 4)
+    assert x.dim() == 3 or x.dim() == 4
     dim = x.dim() - 1
 
     return x.flip(dims=(dim,))
@@ -20,12 +47,12 @@ def flip(x):
 def norm_heatmap(norm_type, heatmap, tau=5, sample_num=1):
     # Input tensor shape: [N,C,...]
     shape = heatmap.shape
-    if norm_type == 'softmax':
+    if norm_type == "softmax":
         heatmap = heatmap.reshape(*shape[:2], -1)
         # global soft max
         heatmap = F.softmax(heatmap, 2)
         return heatmap.reshape(*shape)
-    elif norm_type == 'sampling':
+    elif norm_type == "sampling":
         heatmap = heatmap.reshape(*shape[:2], -1)
 
         eps = torch.rand_like(heatmap)
@@ -34,8 +61,7 @@ def norm_heatmap(norm_type, heatmap, tau=5, sample_num=1):
 
         gumbel_heatmap = F.softmax(gumbel_heatmap, 2)
         return gumbel_heatmap.reshape(*shape)
-    elif norm_type == 'multiple_sampling':
-
+    elif norm_type == "multiple_sampling":
         heatmap = heatmap.reshape(*shape[:2], 1, -1)
 
         eps = torch.rand(*heatmap.shape[:2], sample_num, heatmap.shape[3], device=heatmap.device)
@@ -55,49 +81,44 @@ class HRNetSMPLXCamKidReg(nn.Module):
     def __init__(self, norm_layer=nn.BatchNorm2d, **kwargs):
         super(HRNetSMPLXCamKidReg, self).__init__()
         self._norm_layer = norm_layer
-        self.num_joints = kwargs['NUM_JOINTS']
+        self.num_joints = kwargs["NUM_JOINTS"]
         assert self.num_joints == 71, self.num_joints
-        self.norm_type = kwargs['POST']['NORM_TYPE']
-        self.depth_dim = kwargs['EXTRA']['DEPTH_DIM']
-        self.height_dim = kwargs['HEATMAP_SIZE'][0]
-        self.width_dim = kwargs['HEATMAP_SIZE'][1]
+        self.norm_type = kwargs["POST"]["NORM_TYPE"]
+        self.depth_dim = kwargs["EXTRA"]["DEPTH_DIM"]
+        self.height_dim = kwargs["HEATMAP_SIZE"][0]
+        self.width_dim = kwargs["HEATMAP_SIZE"][1]
         self.smpl_dtype = torch.float32
-        self.use_kid = kwargs['EXTRA']['USE_KID']
+        self.use_kid = kwargs["EXTRA"]["USE_KID"]
 
-        self.preact = get_hrnet(kwargs['HRNET_TYPE'], num_joints=70,
-                                depth_dim=self.depth_dim,
-                                is_train=True, generate_feat=True, generate_hm=False,
-                                pretrain=kwargs['HR_PRETRAINED'])
-        self.pretrain_hrnet = kwargs['HR_PRETRAINED']
-
-        self.smplx_layer = SMPLXLayer(
-            # model_path='model_files/smpl_v1.1.0/smplx/SMPLX_NEUTRAL.npz',
-            model_path='model_files/smplx/SMPLX_NEUTRAL.npz',
-            num_betas=10,
-            use_pca=False,
-            age='kid',
-            kid_template_path='model_files/smplx_kid_template.npy',
+        self.preact = get_hrnet(
+            kwargs["HRNET_TYPE"],
+            num_joints=70,
+            depth_dim=self.depth_dim,
+            is_train=True,
+            generate_feat=True,
+            generate_hm=False,
+            pretrain=kwargs["HR_PRETRAINED"],
         )
+        self.pretrain_hrnet = kwargs["HR_PRETRAINED"]
+        (
+            smplx_layer_neutral,
+            smplx_layer_male,
+            smplx_layer_female,
+            smplx_layer_neutral_kid,
+            smplx_layer_male_kid,
+            smplx_layer_female_kid,
+        ) = load_models()
+        self.smplx_layer = smplx_layer_neutral_kid
 
         self.root_idx_smpl = 0
-        self.body_joint_pairs = [
-            (1, 2), (4, 5), (7, 8), (10, 11),
-            (13, 14), (16, 17), (18, 19), (20, 21),
-            (23, 24)
-        ]
-        self.hand_joint_pairs = [
-            (25 + i, 40 + i) for i in range(40 - 25)
-        ]
-        self.leaf_joint_pairs = [
-            (55, 56), (58, 59)
-        ] + [(60 + i, 65 + i) for i in range(5)]
+        self.body_joint_pairs = [(1, 2), (4, 5), (7, 8), (10, 11), (13, 14), (16, 17), (18, 19), (20, 21), (23, 24)]
+        self.hand_joint_pairs = [(25 + i, 40 + i) for i in range(40 - 25)]
+        self.leaf_joint_pairs = [(55, 56), (58, 59)] + [(60 + i, 65 + i) for i in range(5)]
         self.joint_pairs = self.body_joint_pairs + self.hand_joint_pairs + self.leaf_joint_pairs
 
         # init cam
         init_cam = torch.tensor([0.9])
-        self.register_buffer(
-            'init_cam',
-            torch.Tensor(init_cam).float())
+        self.register_buffer("init_cam", torch.Tensor(init_cam).float())
 
         self.decshape = nn.Linear(2048, 21)
 
@@ -109,11 +130,11 @@ class HRNetSMPLXCamKidReg(nn.Module):
         self.fc_coord_mouthtop = nn.Linear(2048, 1 * 3)
         self.decsigma_mouthtop = nn.Linear(2048, 1)
 
-        self.focal_length = kwargs['FOCAL_LENGTH']
-        bbox_3d_shape = kwargs['BBOX_3D_SHAPE'] if 'BBOX_3D_SHAPE' in kwargs else (2200, 2200, 2200)
+        self.focal_length = kwargs["FOCAL_LENGTH"]
+        bbox_3d_shape = kwargs["BBOX_3D_SHAPE"] if "BBOX_3D_SHAPE" in kwargs else (2200, 2200, 2200)
         self.bbox_3d_shape = torch.tensor(bbox_3d_shape).float()
         self.depth_factor = self.bbox_3d_shape[2] * 1e-3
-        self.hand_relative = kwargs['EXTRA'].get('HAND_REL', False)
+        self.hand_relative = kwargs["EXTRA"].get("HAND_REL", False)
 
         self.left_wrist_id = 20
         self.left_fingers_ids = list(range(25, 40))
@@ -139,7 +160,6 @@ class HRNetSMPLXCamKidReg(nn.Module):
         return pred_phi
 
     def flip_sigma(self, pred_sigma):
-
         for pair in self.joint_pairs:
             dim0, dim1 = pair
             idx = torch.Tensor((dim0, dim1)).long()
@@ -157,14 +177,14 @@ class HRNetSMPLXCamKidReg(nn.Module):
 
         weight = weight.clamp_min(0)
 
-        if 'bboxes' in kwargs.keys():
-            bboxes = kwargs['bboxes']
-            img_center = kwargs['img_center']
+        if "bboxes" in kwargs.keys():
+            bboxes = kwargs["bboxes"]
+            img_center = kwargs["img_center"]
 
             cx = (bboxes[:, 0] + bboxes[:, 2]) * 0.5
             cy = (bboxes[:, 1] + bboxes[:, 3]) * 0.5
-            w = (bboxes[:, 2] - bboxes[:, 0])
-            h = (bboxes[:, 3] - bboxes[:, 1])
+            w = bboxes[:, 2] - bboxes[:, 0]
+            h = bboxes[:, 3] - bboxes[:, 1]
 
             cx = cx - img_center[:, 0]
             cy = cy - img_center[:, 1]
@@ -174,8 +194,9 @@ class HRNetSMPLXCamKidReg(nn.Module):
             bbox_center = torch.stack((cx, cy), dim=1).unsqueeze(dim=1)
 
             pred_xyz[:, :, 2:] = pred_uvd[:, :, 2:].clone()  # unit: (self.depth_factor m)
-            pred_xy = ((pred_uvd[:, :, :2] + bbox_center) * self.input_size / self.focal_length) \
-                * (pred_xyz[:, :, 2:] * self.depth_factor + cam_depth)  # unit: m
+            pred_xy = ((pred_uvd[:, :, :2] + bbox_center) * self.input_size / self.focal_length) * (
+                pred_xyz[:, :, 2:] * self.depth_factor + cam_depth
+            )  # unit: m
 
             pred_xyz[:, :, :2] = pred_xy / self.depth_factor  # unit: (self.depth_factor m)
 
@@ -184,8 +205,9 @@ class HRNetSMPLXCamKidReg(nn.Module):
             # copy z
             pred_xyz[:, :, 2:] = pred_uvd[:, :, 2:].clone()  # unit: (self.depth_factor m)
             # back-project xy
-            pred_xy = (pred_uvd[:, :, :2] * self.input_size / self.focal_length) \
-                * (pred_xyz[:, :, 2:] * self.depth_factor + cam_depth)  # unit: m
+            pred_xy = (pred_uvd[:, :, :2] * self.input_size / self.focal_length) * (
+                pred_xyz[:, :, 2:] * self.depth_factor + cam_depth
+            )  # unit: m
 
             # unit: (self.depth_factor m)
             pred_xyz[:, :, :2] = pred_xy / self.depth_factor
@@ -203,7 +225,7 @@ class HRNetSMPLXCamKidReg(nn.Module):
             pose_skeleton=pred_xyz.type(self.smpl_dtype) * 2.2,
             phis=pred_phi.type(self.smpl_dtype),
             return_verts=True,
-            naive=True
+            naive=True,
         )
 
         # unit: m
@@ -212,7 +234,7 @@ class HRNetSMPLXCamKidReg(nn.Module):
         pred_xyz55 = pred_xyz55 + camera_root.unsqueeze(dim=1)
 
         pred_uvd55 = pred_uvd[:, :55, :].clone()
-        if 'bboxes' in kwargs.keys():
+        if "bboxes" in kwargs.keys():
             pred_uvd55[:, :, :2] = pred_uvd55[:, :, :2] + bbox_center
 
         bs = pred_uvd.shape[0]
@@ -231,8 +253,12 @@ class HRNetSMPLXCamKidReg(nn.Module):
         # [B, 2K, 1]
         A = torch.cat((Ax, Ay), dim=1)
 
-        bx = (pred_xyz55[:, :, 0] - self.input_size * pred_uvd55[:, :, 0] / self.focal_length * pred_xyz55[:, :, 2]) * weight_uv55[:, :, 0]
-        by = (pred_xyz55[:, :, 1] - self.input_size * pred_uvd55[:, :, 1] / self.focal_length * pred_xyz55[:, :, 2]) * weight_uv55[:, :, 0]
+        bx = (
+            pred_xyz55[:, :, 0] - self.input_size * pred_uvd55[:, :, 0] / self.focal_length * pred_xyz55[:, :, 2]
+        ) * weight_uv55[:, :, 0]
+        by = (
+            pred_xyz55[:, :, 1] - self.input_size * pred_uvd55[:, :, 1] / self.focal_length * pred_xyz55[:, :, 2]
+        ) * weight_uv55[:, :, 0]
 
         # [B, 2K, 1]
         b = torch.cat((bx, by), dim=1)[:, :, None]
@@ -283,7 +309,9 @@ class HRNetSMPLXCamKidReg(nn.Module):
             flip_out_coord = torch.cat((flip_out_coord, flip_out_coord_mouthtop), dim=1)
             flip_out_sigma = torch.cat((flip_out_sigma, flip_out_sigma_mouthtop), dim=1)
 
-            flip_out_coord, flip_out_sigma = flip_coord((flip_out_coord, flip_out_sigma), self.joint_pairs, width_dim, shift=True, flatten=False)
+            flip_out_coord, flip_out_sigma = flip_coord(
+                (flip_out_coord, flip_out_sigma), self.joint_pairs, width_dim, shift=True, flatten=False
+            )
             flip_out_coord = flip_out_coord.reshape(batch_size, self.num_joints, 3)
             flip_out_sigma = flip_out_sigma.reshape(batch_size, self.num_joints, 1)
 
@@ -328,23 +356,24 @@ class HRNetSMPLXCamKidReg(nn.Module):
                     init_scale=camScale,
                     pred_shape_full=pred_shape_full,
                     pred_phi=pred_phi,
-                    **kwargs)
+                    **kwargs,
+                )
             except RuntimeError:
                 pass
 
         camDepth = self.focal_length / (self.input_size * camScale + 1e-9)
 
-        assert torch.sum(torch.isnan(pred_uvd_jts)) == 0, ('pred_uvd_jts', pred_uvd_jts)
-        assert torch.sum(torch.isnan(pred_camera)) == 0, ('pred_camera', pred_camera)
+        assert torch.sum(torch.isnan(pred_uvd_jts)) == 0, ("pred_uvd_jts", pred_uvd_jts)
+        assert torch.sum(torch.isnan(pred_camera)) == 0, ("pred_camera", pred_camera)
         pred_xyz_jts = torch.zeros_like(pred_uvd_jts)
-        if 'bboxes' in kwargs.keys():
-            bboxes = kwargs['bboxes']
-            img_center = kwargs['img_center']
+        if "bboxes" in kwargs.keys():
+            bboxes = kwargs["bboxes"]
+            img_center = kwargs["img_center"]
 
             cx = (bboxes[:, 0] + bboxes[:, 2]) * 0.5
             cy = (bboxes[:, 1] + bboxes[:, 3]) * 0.5
-            w = (bboxes[:, 2] - bboxes[:, 0])
-            h = (bboxes[:, 3] - bboxes[:, 1])
+            w = bboxes[:, 2] - bboxes[:, 0]
+            h = bboxes[:, 3] - bboxes[:, 1]
 
             cx = cx - img_center[:, 0]
             cy = cy - img_center[:, 1]
@@ -354,8 +383,9 @@ class HRNetSMPLXCamKidReg(nn.Module):
             bbox_center = torch.stack((cx, cy), dim=1).unsqueeze(dim=1)
 
             pred_xyz_jts[:, :, 2:] = pred_uvd_jts[:, :, 2:].clone()  # unit: (self.depth_factor m)
-            pred_xy_jts_29_meter = ((pred_uvd_jts[:, :, :2] + bbox_center) * self.input_size / self.focal_length) \
-                * (pred_xyz_jts[:, :, 2:] * self.depth_factor + camDepth)  # unit: m
+            pred_xy_jts_29_meter = ((pred_uvd_jts[:, :, :2] + bbox_center) * self.input_size / self.focal_length) * (
+                pred_xyz_jts[:, :, 2:] * self.depth_factor + camDepth
+            )  # unit: m
 
             pred_xyz_jts[:, :, :2] = pred_xy_jts_29_meter / self.depth_factor  # unit: (self.depth_factor m)
 
@@ -363,8 +393,9 @@ class HRNetSMPLXCamKidReg(nn.Module):
             camera_root[:, 2] += camDepth[:, 0, 0]
         else:
             pred_xyz_jts[:, :, 2:] = pred_uvd_jts[:, :, 2:].clone()  # unit: (self.depth_factor m)
-            pred_xy_jts_29_meter = (pred_uvd_jts[:, :, :2] * self.input_size / self.focal_length) \
-                * (pred_xyz_jts[:, :, 2:] * self.depth_factor + camDepth)  # unit: m
+            pred_xy_jts_29_meter = (pred_uvd_jts[:, :, :2] * self.input_size / self.focal_length) * (
+                pred_xyz_jts[:, :, 2:] * self.depth_factor + camDepth
+            )  # unit: m
 
             pred_xyz_jts[:, :, :2] = pred_xy_jts_29_meter / self.depth_factor  # unit: (self.depth_factor m)
 
@@ -384,7 +415,7 @@ class HRNetSMPLXCamKidReg(nn.Module):
             expression=pred_expression.type(self.smpl_dtype),
             pose_skeleton=pred_xyz_jts.type(self.smpl_dtype) * 2.2,
             phis=pred_phi.type(self.smpl_dtype),
-            return_verts=True
+            return_verts=True,
         )
         pred_vertices = output.vertices.float()
         #  -0.5 ~ 0.5
@@ -399,16 +430,16 @@ class HRNetSMPLXCamKidReg(nn.Module):
         transl = camera_root - output.joints.float().reshape(batch_size, -1, 3)[:, 0, :]
 
         gt_output = 0
-        if 'gt_labels' in kwargs.keys() and kwargs['gt_labels'] is not None:
-            gt_labels = kwargs['gt_labels']
-            gt_beta = torch.cat([gt_labels['target_beta'], gt_labels['target_beta_kid']], dim=1)
+        if "gt_labels" in kwargs.keys() and kwargs["gt_labels"] is not None:
+            gt_labels = kwargs["gt_labels"]
+            gt_beta = torch.cat([gt_labels["target_beta"], gt_labels["target_beta_kid"]], dim=1)
             with torch.no_grad():
                 gt_output = self.smplx_layer.forward_simple(
                     betas=gt_beta,
-                    expression=gt_labels['target_expression'],
-                    full_pose=gt_labels['target_theta_full'].reshape(-1, 55, 9),
+                    expression=gt_labels["target_expression"],
+                    full_pose=gt_labels["target_theta_full"].reshape(-1, 55, 9),
                     return_verts=True,
-                    root_align=True
+                    root_align=True,
                 )
 
         # project
@@ -417,10 +448,10 @@ class HRNetSMPLXCamKidReg(nn.Module):
         pred_xyz_full = pred_xyz_full + transl[:, None, :]
         pred_uv_full = (pred_xyz_full[:, :, :2] / pred_xyz_full[:, :, 2:]) * self.focal_length / self.input_size
 
-        if 'bboxes' in kwargs.keys():
+        if "bboxes" in kwargs.keys():
             pred_uv_full = pred_uv_full - bbox_center
 
-        output = edict(
+        output = HRNetSMPLXCamKidRegFrame(
             pred_phi=pred_phi,
             pred_shape_full=pred_shape_full,
             pred_beta=pred_beta,
@@ -443,17 +474,11 @@ class HRNetSMPLXCamKidReg(nn.Module):
             transl=transl,
             img_feat=x0,
             pred_camera=pred_camera,
-            gt_output=gt_output
+            gt_output=gt_output,
         )
         return output
 
     def forward_gt_theta(self, gt_theta, gt_beta):
-
-        output = self.smpl(
-            pose_axis_angle=gt_theta,
-            betas=gt_beta,
-            global_orient=None,
-            return_verts=True
-        )
+        output = self.smpl(pose_axis_angle=gt_theta, betas=gt_beta, global_orient=None, return_verts=True)
 
         return output

@@ -15,14 +15,6 @@ from hybrik.utils.pose_utils import pixel2cam, reconstruction_error
 from hybrik.utils.presets.simple_transform_3d_smplx import \
     SimpleTransform3DSMPLX
 
-(
-    smplx_layer_neutral,
-    smplx_layer_male,
-    smplx_layer_female,
-    smplx_layer_neutral_kid,
-    smplx_layer_male_kid,
-    smplx_layer_female_kid
-) = load_models()
 
 
 class AGORAX(data.Dataset):
@@ -228,6 +220,14 @@ class AGORAX(data.Dataset):
 
     def _lazy_load_pt(self, db):
         """Load all image paths and labels from json annotation files into buffer."""
+        (
+            smplx_layer_neutral,
+            smplx_layer_male,
+            smplx_layer_female,
+            smplx_layer_neutral_kid,
+            smplx_layer_male_kid,
+            smplx_layer_female_kid
+        ) = load_models()
 
         items = []
         labels = []

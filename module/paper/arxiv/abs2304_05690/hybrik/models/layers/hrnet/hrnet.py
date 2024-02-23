@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
-from easydict import EasyDict as edict
+from ....utils.easydict import EasyDict as edict
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
@@ -610,7 +610,7 @@ def load_hrnet_cfg(file_name):
 
 
 def get_hrnet(type_name, num_joints, depth_dim, **kwargs):
-    cfg = load_hrnet_cfg(f'./hybrik/models/layers/hrnet/w{type_name}.yaml')
+    cfg = load_hrnet_cfg(os.path.join(os.path.dirname(__file__), f'w{type_name}.yaml'))
     cfg['MODEL']['NUM_JOINTS'] = num_joints
     cfg['MODEL']['DEPTH_DIM'] = depth_dim
 

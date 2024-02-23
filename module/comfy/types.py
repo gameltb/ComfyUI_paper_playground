@@ -8,6 +8,7 @@ class ComfyWidgetType(BaseModel):
 
     TYPE: typing.ClassVar
     required: bool = True
+    forceInput: bool = True
 
     def opts(self):
         return self.model_dump(mode="python", exclude_none=True)
@@ -22,6 +23,7 @@ class ComfyWidgetType(BaseModel):
 
 class Int(ComfyWidgetType):
     TYPE = "INT"
+    forceInput: bool = False
     min: int = None
     max: int = None
     step: int = None
@@ -30,6 +32,7 @@ class Int(ComfyWidgetType):
 
 class Float(ComfyWidgetType):
     TYPE = "FLOAT"
+    forceInput: bool = False
     min: float = None
     max: float = None
     step: float = None
@@ -39,11 +42,13 @@ class Float(ComfyWidgetType):
 
 class String(ComfyWidgetType):
     TYPE = "STRING"
+    forceInput: bool = False
     multiline: bool = None
 
 
 class Bool(ComfyWidgetType):
     TYPE = "BOOLEAN"
+    forceInput: bool = False
     label_on: str = None
     label_off: str = None
 
@@ -55,6 +60,8 @@ class Color(ComfyWidgetType):
 
 
 class IMAGE(ComfyWidgetType):
+    """Tensor [B,H,W,C]"""
+
     TYPE = "IMAGE"
 
 
@@ -64,15 +71,30 @@ class LATENT(ComfyWidgetType):
 
 class Combo(ComfyWidgetType):
     TYPE = "COMBO"
-    choices: typing.Mapping[str, typing.Any]
+    forceInput: bool = False
+    choices: typing.Mapping[str, typing.Any] | typing.List[str] | typing.Callable[
+        [], typing.Mapping[str, typing.Any] | typing.List[str]
+    ]
     ext_none_choice: str = None
+    choices_cache: typing.Mapping[str, typing.Any] | typing.List[str]
 
     def opts(self):
-        return self.model_dump(mode="python", exclude_none=True, exclude={"choices"})
+        return self.model_dump(
+            mode="python", exclude_none=True, exclude={"choices", "ext_none_choice", "choices_cache"}
+        )
 
     @property
     def type(self):
-        typs = list(self.choices.keys())
+        choices = self.choices
+        if callable(choices):
+            choices = choices()
+
+        self.choices_cache = choices
+        if isinstance(choices, dict):
+            typs = list(choices.keys())
+        elif isinstance(choices, list):
+            typs = choices[:]
+
         if self.ext_none_choice is not None:
             typs.append(self.ext_none_choice)
         return typs
@@ -80,7 +102,12 @@ class Combo(ComfyWidgetType):
     def __getitem__(self, item):
         if item == self.ext_none_choice:
             return None
-        return self.choices[item]
+
+        choices = self.choices_cache
+        if isinstance(choices, list):
+            return item
+        elif isinstance(choices, dict):
+            return choices[item]
 
 
 # Workaround ComfyUI #257

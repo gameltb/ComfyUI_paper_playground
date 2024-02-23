@@ -1,14 +1,14 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from easydict import EasyDict as edict
+from ..utils.easydict import EasyDict as edict
 from torch.nn import functional as F
 
 from .builder import SPPE
 from .layers.Resnet import ResNet
 from .layers.smpl.SMPL import SMPL_layer
 
-from hybrik.utils.transforms import flip_coord
+from ..utils.transforms import flip_coord
 
 
 def flip(x):

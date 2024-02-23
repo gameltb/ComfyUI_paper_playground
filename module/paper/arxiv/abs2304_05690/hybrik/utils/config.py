@@ -1,5 +1,5 @@
 import yaml
-from easydict import EasyDict as edict
+from .easydict import EasyDict as edict
 
 
 def update_config(config_file):

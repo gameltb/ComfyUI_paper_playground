@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from easydict import EasyDict as edict
+from ..utils.easydict import EasyDict as edict
 from torch.nn import functional as F
 
-from hybrik.models.layers.smplx.body_models import SMPLXLayer
+from ..models.layers.smplx.body_models import SMPLXLayer
 
 from .builder import SPPE
 from .layers.hrnet.hrnet_25d import get_hrnet25d

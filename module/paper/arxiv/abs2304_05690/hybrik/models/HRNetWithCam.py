@@ -1,4 +1,4 @@
-from easydict import EasyDict as edict
+from ..utils.easydict import EasyDict as edict
 
 import numpy as np
 import torch

@@ -1,4 +1,5 @@
 import typing
+import torch
 
 from pydantic import BaseModel
 
@@ -21,7 +22,7 @@ class ComfyWidgetType(BaseModel):
         return item
 
 
-class Int(ComfyWidgetType):
+class IntWidget(ComfyWidgetType):
     TYPE = "INT"
     forceInput: bool = False
     min: int = None
@@ -30,7 +31,10 @@ class Int(ComfyWidgetType):
     display: typing.Literal["number", "slider"] = None
 
 
-class Float(ComfyWidgetType):
+IntType = typing.Annotated[int, IntWidget()]
+
+
+class FloatWidget(ComfyWidgetType):
     TYPE = "FLOAT"
     forceInput: bool = False
     min: float = None
@@ -40,43 +44,63 @@ class Float(ComfyWidgetType):
     display: typing.Literal["number", "slider"] = None
 
 
-class String(ComfyWidgetType):
+FloatType = typing.Annotated[float, FloatWidget()]
+
+
+class StringWidget(ComfyWidgetType):
     TYPE = "STRING"
     forceInput: bool = False
     multiline: bool = None
 
 
-class Bool(ComfyWidgetType):
+StringType = typing.Annotated[str, StringWidget()]
+
+
+class BoolWidget(ComfyWidgetType):
     TYPE = "BOOLEAN"
     forceInput: bool = False
     label_on: str = None
     label_off: str = None
 
 
-class Color(ComfyWidgetType):
+BoolType = typing.Annotated[bool, BoolWidget()]
+
+
+class ColorWidget(ComfyWidgetType):
     """Widget only available if you have MTB node pack"""
 
     TYPE = "COLOR"
 
 
-class IMAGE(ComfyWidgetType):
+ColorType = typing.Annotated[torch.Tensor, ColorWidget()]
+
+
+class ImageWidget(ComfyWidgetType):
     """Tensor [B,H,W,C]"""
 
     TYPE = "IMAGE"
 
 
-class LATENT(ComfyWidgetType):
+ImageType = typing.Annotated[torch.Tensor, ImageWidget()]
+
+
+class LatentWidget(ComfyWidgetType):
     TYPE = "LATENT"
 
 
-class Combo(ComfyWidgetType):
+LatentType = typing.Annotated[torch.Tensor, LatentWidget()]
+
+
+class ComboWidget(ComfyWidgetType):
     TYPE = "COMBO"
     forceInput: bool = False
-    choices: typing.Mapping[str, typing.Any] | typing.List[str] | typing.Callable[
-        [], typing.Mapping[str, typing.Any] | typing.List[str]
+    choices: typing.Union[
+        typing.Mapping[str, typing.Any],
+        typing.List[str],
+        typing.Callable[[], typing.Union[typing.Mapping[str, typing.Any], typing.List[str]]],
     ]
     ext_none_choice: str = None
-    choices_cache: typing.Mapping[str, typing.Any] | typing.List[str]
+    choices_cache: typing.Mapping[str, typing.Any] | typing.List[str] = None
 
     def opts(self):
         return self.model_dump(
@@ -111,7 +135,30 @@ class Combo(ComfyWidgetType):
 
 
 # Workaround ComfyUI #257
-Any = type("AnyType", (str,), {"__ne__": lambda self, value: False})("*")
+AnyType = typing.Annotated[typing.Any, type("AnyType", (str,), {"__ne__": lambda self, value: False})("*")]
 
 
-__all__ = ["Int", "Float", "String", "Bool", "Color", "IMAGE", "LATENT", "Combo", "Any"]
+class ReturnUI(BaseModel):
+    ui: dict = dict()
+    result: tuple = tuple()
+
+
+__all__ = [
+    "IntWidget",
+    "FloatWidget",
+    "StringWidget",
+    "BoolWidget",
+    "ColorWidget",
+    "ImageWidget",
+    "LatentWidget",
+    "ComboWidget",
+    "AnyType",
+    "IntType",
+    "FloatType",
+    "StringType",
+    "BoolType",
+    "ColorType",
+    "ImageType",
+    "LatentType",
+    "ReturnUI",
+]

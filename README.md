@@ -25,3 +25,14 @@ Put https://huggingface.co/Bingxin/Marigold to `ComfyUI/models/diffusers/Marigol
 ### Example
 
 ![](assets/abs2312_02145.png)
+
+## [HybrIK: Hybrid Analytical-Neural Inverse Kinematics for Body Mesh Recovery](https://github.com/Jeff-sjtu/HybrIK)
+
+Refer to the README.
+
+```bash
+pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+```
+
+Unzip model_files to directory `ComfyUI/models/playground/paper/arxiv/abs2304_05690/` .  
+Put HybrIK-X rle model to `ComfyUI/models/playground/paper/arxiv/abs2304_05690/hybrikx/`.

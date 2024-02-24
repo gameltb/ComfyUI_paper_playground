@@ -1,19 +1,23 @@
 import os
+from typing import Annotated
 
-import numpy as np
 import torch
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 
 from .....common import path_tool
 from .....paper.arxiv.abs2304_05690.hybrik.models import builder
 from .....paper.arxiv.abs2304_05690.hybrik.utils.config import update_config
-from .....paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3DSMPLX
-from ....registry import register_node
-from ....types import Combo, Bool, String, ComfyWidgetType, IMAGE, Int, Float, LATENT
-from .....pipelines.abs2304_05690 import HybrikXPipeline
 from .....paper.arxiv.abs2304_05690.hybrik.utils.easydict import EasyDict
+from .....paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3DSMPLX
+from .....pipelines.abs2304_05690 import HybrikXPipeline
 from .....utils.json import np_dump
-
+from ....registry import register_node
+from ....types import (
+    ComboWidget,
+    ComfyWidgetType,
+    ImageType,
+    StringType,
+)
 
 SMPLX_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs/smplx")
 SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for filename in os.listdir(SMPLX_CONFIG_PATH)}
@@ -21,24 +25,27 @@ SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for fi
 HYBRIKX_MODEL_PATH = path_tool.get_model_filename_list(__name__, "hybrikx")
 
 
-class HYBRIKX_PIPELINE(ComfyWidgetType):
+class HybrikxPipelineWidget(ComfyWidgetType):
     TYPE = "HYBRIKX_PIPELINE"
 
 
-class HYBRIKX_FRAME(ComfyWidgetType):
+HybrikxPipelineType = Annotated[HybrikXPipeline, HybrikxPipelineWidget()]
+
+
+class HybrikxFrameWidget(ComfyWidgetType):
     TYPE = "HYBRIKX_FRAME"
+
+
+HybrikxFrameType = Annotated[dict, HybrikxFrameWidget()]
 
 
 @register_node(category="arxiv/abs2304_05690")
 def load_hybrikx(
-    cfg_file_path: Combo(choices=SMPLX_CONFIG_FILES),
-    ckpt_path: Combo(
-        choices=lambda: {
-            p: path_tool.get_model_full_path(__name__, "hybrikx", p)
-            for p in path_tool.get_model_filename_list(__name__, "hybrikx")
-        }
-    ),
-) -> (HYBRIKX_PIPELINE(),):
+    cfg_file_path: Annotated[str, ComboWidget(choices=SMPLX_CONFIG_FILES)],
+    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, "hybrikx"))],
+) -> tuple[HybrikxFrameType]:
+    ckpt_path = path_tool.get_model_full_path(__name__, "hybrikx", ckpt_path)
+
     cfg = update_config(cfg_file_path)
 
     cfg["MODEL"]["EXTRA"]["USE_KID"] = cfg["DATASET"].get("USE_KID", False)
@@ -93,18 +100,18 @@ def load_hybrikx(
 
 @register_node(category="arxiv/abs2304_05690")
 def run_hybrikx(
-    hybrikx_pipeline: HYBRIKX_PIPELINE(),
-    image: IMAGE(),
-) -> (HYBRIKX_FRAME(),):
+    hybrikx_pipeline: HybrikxFrameType,
+    image: ImageType,
+) -> tuple[HybrikxFrameType]:
     input_image = image.cpu().float().numpy()[0]
     return (hybrikx_pipeline(input_image),)
 
 
 @register_node(category="arxiv/abs2304_05690", output=True)
 def save_hybrikx(
-    hybrikx_frame: HYBRIKX_FRAME(),
-    path: String() = "hybrikx_frame.json",
-) -> tuple():
+    hybrikx_frame: HybrikxFrameType,
+    path: StringType = "hybrikx_frame.json",
+) -> None:
     with open(path, "w") as f:
         np_dump(hybrikx_frame, f)
     return {}

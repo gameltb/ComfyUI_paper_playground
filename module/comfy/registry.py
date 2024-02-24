@@ -1,6 +1,7 @@
 import inspect
 import re
 from functools import wraps
+import typing
 
 from .types import ComfyWidgetType
 
@@ -11,6 +12,18 @@ PACK_BASE_CATEGORY = None
 PACK_UID = None
 
 
+def find_comfy_widget_type_annotation(
+    tp: typing.Union[typing.Annotated, ComfyWidgetType],
+) -> typing.Union[ComfyWidgetType, None]:
+    if isinstance(tp, ComfyWidgetType):
+        return tp
+    elif hasattr(tp, "__metadata__"):
+        for meta in tp.__metadata__:
+            if isinstance(meta, ComfyWidgetType):
+                return meta
+    return None
+
+
 class NodeTemplate:
     _FUNCTION_SIG = None
     FUNCTION = "exec"
@@ -19,8 +32,8 @@ class NodeTemplate:
     def INPUT_TYPES(cls):
         input_types = {"required": {}, "optional": {}}
         for k, v in cls._FUNCTION_SIG.parameters.items():
-            t = v.annotation
-            assert isinstance(t, ComfyWidgetType)
+            t = find_comfy_widget_type_annotation(v.annotation)
+            assert t is not None
             opts = {}
             req = "required" if t.required else "optional"
             opts = t.opts()
@@ -61,9 +74,17 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
             sig = inspect.signature(f)
             node_attrs["_FUNCTION_SIG"] = sig
 
-            node_attrs["RETURN_TYPES"] = tuple(
-                x.type if isinstance(x, ComfyWidgetType) else x for x in sig.return_annotation
-            )
+            return_annotation = sig.return_annotation
+            if return_annotation == inspect._empty or return_annotation is None:
+                return_annotation = tuple()
+            elif isinstance(return_annotation, tuple):
+                pass
+            elif typing.get_origin(return_annotation) == tuple:
+                return_annotation = typing.get_args(return_annotation)
+            else:
+                print(f"WARNING: Unknow object {return_annotation} for RETURN_TYPES.")
+
+            node_attrs["RETURN_TYPES"] = tuple(find_comfy_widget_type_annotation(x).type for x in return_annotation)
 
             cat_list = []
             if PACK_BASE_CATEGORY is not None:
@@ -80,9 +101,10 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
             @wraps(f)
             def exec(**kwargs):
                 for k, v in kwargs.items():
-                    if isinstance(sig.parameters[k].annotation, ComfyWidgetType):
+                    comfy_widget_type_annotation = find_comfy_widget_type_annotation(sig.parameters[k].annotation)
+                    if comfy_widget_type_annotation is not None:
                         # Look up Combo value from mapping
-                        kwargs[k] = sig.parameters[k].annotation[v]
+                        kwargs[k] = comfy_widget_type_annotation[v]
                 return f(**kwargs)
 
             node_attrs["exec"] = staticmethod(exec)
@@ -90,7 +112,10 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         elif inspect.isclass(f):
             node_class = f
         else:
-            raise Exception(f"Unknow object {node_identifier} for register_node.")
+            raise Exception(f"WARNING: Unknow object {node_identifier} for register_node.")
+
+        # just check at setup
+        node_class.INPUT_TYPES()
 
         NODE_CLASS_MAPPINGS[unique_name] = node_class
         if display_name is not None:

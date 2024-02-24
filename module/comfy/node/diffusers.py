@@ -2,6 +2,7 @@ import copy
 import inspect
 import json
 import os
+import typing
 
 import diffusers
 import torch
@@ -13,7 +14,16 @@ import comfy.utils
 import folder_paths
 
 from ..registry import register_node
-from ..types import Combo, Bool, String, ComfyWidgetType, IMAGE, Int, Float, LATENT
+from ..types import (
+    ComboWidget,
+    BoolType,
+    StringWidget,
+    ComfyWidgetType,
+    ImageType,
+    IntWidget,
+    FloatWidget,
+    LatentWidget,
+)
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
 DIFFUSERS_MODEL_CLASS_MAP = {}
@@ -33,10 +43,6 @@ for cls_name, cls in clsmembers:
             DIFFUSERS_SCHEDULER_CLASS_MAP[cls_name] = cls
     # else:
     #     print("not register: ", cls)
-
-
-class DIFFUSERS_PIPELINE(ComfyWidgetType):
-    TYPE = "DIFFUSERS_PIPELINE"
 
 
 def get_diffusers_folder_paths():
@@ -105,13 +111,20 @@ class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
             self.current_device = device_to
 
 
+class DiffusersPipelineWidget(ComfyWidgetType):
+    TYPE = "DIFFUSERS_PIPELINE"
+
+
+DiffusersPipelineType = typing.Annotated[DiffusersComfyModelPatcherWrapper, DiffusersPipelineWidget()]
+
+
 @register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")
 def diffusers_from_pretrained(
-    pipeline_type: Combo(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = DiffusionPipeline.__name__,
-    local_files_only: Bool() = True,
-    directory: Combo(choices={p: p for p in get_diffusers_folder_paths()}) = None,
-    model_id: String() = "",
-) -> (DIFFUSERS_PIPELINE(),):
+    pipeline_type: ComboWidget(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = DiffusionPipeline.__name__,
+    local_files_only: BoolType = True,
+    directory: ComboWidget(choices=lambda: get_diffusers_folder_paths()) = None,
+    model_id: StringWidget() = "",
+) -> tuple[DiffusersPipelineType]:
     pipeline_cls = pipeline_type
     return diffusers_from_pretrained_cls(pipeline_cls, local_files_only, directory=directory, model_id=model_id)
 
@@ -149,10 +162,10 @@ SINGLE_FILE_CONFIG_FILES = {
 
 @register_node(identifier="DiffusersPipelineFromSingleFile", category="loaders")
 def diffusers_from_single_file(
-    pipeline_type: Combo(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = StableDiffusionPipeline.__name__,
-    ckpt_name: Combo(choices={p: p for p in folder_paths.get_filename_list("checkpoints")}) = None,
-    single_file_config_file: Combo(choices=SINGLE_FILE_CONFIG_FILES) = None,
-) -> (DIFFUSERS_PIPELINE(),):
+    pipeline_type: ComboWidget(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = StableDiffusionPipeline.__name__,
+    ckpt_name: ComboWidget(choices=lambda: folder_paths.get_filename_list("checkpoints")) = None,
+    single_file_config_file: ComboWidget(choices=SINGLE_FILE_CONFIG_FILES) = None,
+) -> tuple[DiffusersPipelineType]:
     pipeline_cls: StableDiffusionPipeline = pipeline_type
     ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
 
@@ -176,16 +189,16 @@ def diffusers_from_single_file(
 
 @register_node(identifier="DiffusersPipelineSamplerBase", category="sampling")
 def diffusers_sampler_base(
-    diffusers_pipeline: DIFFUSERS_PIPELINE(),
-    seed: Int(min=0, max=0xFFFFFFFFFFFFFFFF) = 0,
-    steps: Int(min=1, max=10000) = 20,
-    cfg: Float(min=0.0, max=100.0, step=0.1, round=0.01) = 8.0,
-    scheduler: Combo(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
-    latent_image: LATENT() = None,
-    denoise: Float(min=0.0, max=1.0, step=0.01) = 1.0,
-    positive_prompt: String(multiline=True) = "",
-    negative_prompt: String(multiline=True) = "",
-) -> (IMAGE(),):
+    diffusers_pipeline: DiffusersPipelineType,
+    seed: IntWidget(min=0, max=0xFFFFFFFFFFFFFFFF) = 0,
+    steps: IntWidget(min=1, max=10000) = 20,
+    cfg: FloatWidget(min=0.0, max=100.0, step=0.1, round=0.01) = 8.0,
+    scheduler: ComboWidget(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
+    latent_image: LatentWidget() = None,
+    denoise: FloatWidget(min=0.0, max=1.0, step=0.01) = 1.0,
+    positive_prompt: StringWidget(multiline=True) = "",
+    negative_prompt: StringWidget(multiline=True) = "",
+) -> tuple[ImageType]:
     pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
     latent = latent_image["samples"]
     batch, _, height, width = latent.shape

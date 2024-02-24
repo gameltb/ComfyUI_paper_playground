@@ -6,8 +6,8 @@ import comfy.utils
 
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
 from ....registry import register_node
-from ...diffusers import DIFFUSERS_PIPELINE, diffusers_from_pretrained_cls, get_diffusers_folder_paths
-from ....types import Combo
+from ...diffusers import DiffusersPipelineType, diffusers_from_pretrained_cls, get_diffusers_folder_paths
+from ....types import ComboWidget
 
 
 def resize_max_res(img, max_edge_resolution: int):
@@ -27,8 +27,8 @@ def resize_max_res(img, max_edge_resolution: int):
     category="arxiv/abs2312_02145",
 )
 def abs2312_02145_from_pretrained(
-    directory: Combo(choices={p: p for p in get_diffusers_folder_paths()}) = None,
-) -> (DIFFUSERS_PIPELINE(),):
+    directory: ComboWidget(choices=lambda: get_diffusers_folder_paths()) = None,
+) -> tuple[DiffusersPipelineType]:
     pipeline_cls = MarigoldPipeline
     return diffusers_from_pretrained_cls(pipeline_cls, True, directory=directory, model_id=None)
 

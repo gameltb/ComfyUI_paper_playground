@@ -1,8 +1,11 @@
 import typing
+
+import comfy.clip_vision
+import comfy.controlnet
+import comfy.model_patcher
+import comfy.sd
 import torch
-
 from pydantic import BaseModel
-
 
 REGISTERED_TYPES = set()
 
@@ -30,18 +33,34 @@ class ComfyWidgetType(BaseModel):
         REGISTERED_TYPES.add(cls.TYPE)
 
 
+def find_comfy_widget_type_annotation(
+    tp: typing.Union[typing.Annotated, ComfyWidgetType],
+) -> typing.Union[ComfyWidgetType, None]:
+    if isinstance(tp, ComfyWidgetType):
+        return tp
+    elif hasattr(tp, "__metadata__"):
+        for meta in tp.__metadata__:
+            if isinstance(meta, ComfyWidgetType):
+                return meta
+    return None
+
+
 def gen_simple_new_type(
     cls,
     type_str: str,
     is_required: bool = True,
-    is_forceInput: bool = False,
+    is_forceInput: bool = True,
 ):
     class Widget(ComfyWidgetType):
         TYPE = type_str
-        required = is_required
-        forceInput = is_forceInput
+        required: bool = is_required
+        forceInput: bool = is_forceInput
 
     return typing.Annotated[cls, Widget()]
+
+
+def new_widget(tp, is_required: bool = True, is_forceInput: bool = True, **kwargs):
+    return find_comfy_widget_type_annotation(tp).__class__(required=is_required, forceInput=is_forceInput, **kwargs)
 
 
 class IntWidget(ComfyWidgetType):
@@ -87,22 +106,28 @@ class BoolWidget(ComfyWidgetType):
 
 BoolType = typing.Annotated[bool, BoolWidget()]
 
-
-class ColorWidget(ComfyWidgetType):
-    """Widget only available if you have MTB node pack"""
-
-    TYPE = "COLOR"
-
-
-ColorType = typing.Annotated[torch.Tensor, ColorWidget()]
-
+MaskType = gen_simple_new_type(torch.Tensor, "MASK")
+"""Tensor [B,H,W]"""
 
 ImageType = gen_simple_new_type(torch.Tensor, "IMAGE")
 """Tensor [B,H,W,C]"""
 
-
 LatentType = gen_simple_new_type(dict[str, torch.Tensor], "LATENT")
 """samples : Tensor [B,H,W,C]"""
+
+VaeType = gen_simple_new_type(comfy.sd.VAE, "VAE")
+
+ModelType = gen_simple_new_type(comfy.model_patcher.ModelPatcher, "MODEL")
+
+ClipType = gen_simple_new_type(comfy.sd.CLIP, "CLIP")
+
+ConditioningType = gen_simple_new_type(list[tuple[torch.Tensor, dict[str, torch.Tensor]]], "CONDITIONING")
+
+ClipVisionType = gen_simple_new_type(comfy.clip_vision.ClipVisionModel, "CLIP_VISION")
+
+ControlNetType = gen_simple_new_type(
+    typing.Union[comfy.controlnet.ControlLora, comfy.controlnet.ControlNet, comfy.controlnet.T2IAdapter], "CONTROL_NET"
+)
 
 
 class ComboWidget(ComfyWidgetType):
@@ -153,25 +178,5 @@ AnyType = typing.Annotated[typing.Any, type("AnyType", (str,), {"__ne__": lambda
 
 
 class ReturnUI(BaseModel):
-    ui: dict = dict()
+    ui: dict[str, object] = dict()
     result: tuple = tuple()
-
-
-__all__ = [
-    "IntWidget",
-    "FloatWidget",
-    "StringWidget",
-    "BoolWidget",
-    "ColorWidget",
-    "ComboWidget",
-    "AnyType",
-    "IntType",
-    "FloatType",
-    "StringType",
-    "BoolType",
-    "ColorType",
-    "ImageType",
-    "LatentType",
-    "ReturnUI",
-    "gen_simple_new_type",
-]

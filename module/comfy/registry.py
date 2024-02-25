@@ -3,7 +3,7 @@ import re
 from functools import wraps
 import typing
 
-from .types import ComfyWidgetType
+from .types import find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -11,17 +11,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 PACK_BASE_CATEGORY = None
 PACK_UID = None
 
-
-def find_comfy_widget_type_annotation(
-    tp: typing.Union[typing.Annotated, ComfyWidgetType],
-) -> typing.Union[ComfyWidgetType, None]:
-    if isinstance(tp, ComfyWidgetType):
-        return tp
-    elif hasattr(tp, "__metadata__"):
-        for meta in tp.__metadata__:
-            if isinstance(meta, ComfyWidgetType):
-                return meta
-    return None
 
 
 class NodeTemplate:

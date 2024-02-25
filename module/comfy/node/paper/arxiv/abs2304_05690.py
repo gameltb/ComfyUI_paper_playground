@@ -12,12 +12,7 @@ from .....paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3
 from .....pipelines.abs2304_05690 import HybrikXPipeline
 from .....utils.json import np_dump
 from ....registry import register_node
-from ....types import (
-    ComboWidget,
-    ComfyWidgetType,
-    ImageType,
-    StringType,
-)
+from ....types import ComboWidget, ImageType, StringType, gen_simple_new_type
 
 SMPLX_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs/smplx")
 SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for filename in os.listdir(SMPLX_CONFIG_PATH)}
@@ -25,25 +20,15 @@ SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for fi
 HYBRIKX_MODEL_PATH = path_tool.get_model_filename_list(__name__, "hybrikx")
 
 
-class HybrikxPipelineWidget(ComfyWidgetType):
-    TYPE = "HYBRIKX_PIPELINE"
-
-
-HybrikxPipelineType = Annotated[HybrikXPipeline, HybrikxPipelineWidget()]
-
-
-class HybrikxFrameWidget(ComfyWidgetType):
-    TYPE = "HYBRIKX_FRAME"
-
-
-HybrikxFrameType = Annotated[dict, HybrikxFrameWidget()]
+HybrikxPipelineType = gen_simple_new_type(HybrikXPipeline, "HYBRIKX_PIPELINE")
+HybrikxFrameType = gen_simple_new_type(dict, "HYBRIKX_FRAME")
 
 
 @register_node(category="arxiv/abs2304_05690")
 def load_hybrikx(
     cfg_file_path: Annotated[str, ComboWidget(choices=SMPLX_CONFIG_FILES)],
     ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, "hybrikx"))],
-) -> tuple[HybrikxFrameType]:
+) -> tuple[HybrikxPipelineType]:
     ckpt_path = path_tool.get_model_full_path(__name__, "hybrikx", ckpt_path)
 
     cfg = update_config(cfg_file_path)
@@ -100,7 +85,7 @@ def load_hybrikx(
 
 @register_node(category="arxiv/abs2304_05690")
 def run_hybrikx(
-    hybrikx_pipeline: HybrikxFrameType,
+    hybrikx_pipeline: HybrikxPipelineType,
     image: ImageType,
 ) -> tuple[HybrikxFrameType]:
     input_image = image.cpu().float().numpy()[0]

@@ -4,6 +4,9 @@ import torch
 from pydantic import BaseModel
 
 
+REGISTERED_TYPES = set()
+
+
 class ComfyWidgetType(BaseModel):
     """Base type for ComfyUI types that have options controlling how they are displayed."""
 
@@ -20,6 +23,25 @@ class ComfyWidgetType(BaseModel):
 
     def __getitem__(self, item):
         return item
+
+    def __init_subclass__(cls):
+        global REGISTERED_TYPES
+        assert cls.TYPE not in REGISTERED_TYPES
+        REGISTERED_TYPES.add(cls.TYPE)
+
+
+def gen_simple_new_type(
+    cls,
+    type_str: str,
+    is_required: bool = True,
+    is_forceInput: bool = False,
+):
+    class Widget(ComfyWidgetType):
+        TYPE = type_str
+        required = is_required
+        forceInput = is_forceInput
+
+    return typing.Annotated[cls, Widget()]
 
 
 class IntWidget(ComfyWidgetType):
@@ -75,20 +97,12 @@ class ColorWidget(ComfyWidgetType):
 ColorType = typing.Annotated[torch.Tensor, ColorWidget()]
 
 
-class ImageWidget(ComfyWidgetType):
-    """Tensor [B,H,W,C]"""
-
-    TYPE = "IMAGE"
+ImageType = gen_simple_new_type(torch.Tensor, "IMAGE")
+"""Tensor [B,H,W,C]"""
 
 
-ImageType = typing.Annotated[torch.Tensor, ImageWidget()]
-
-
-class LatentWidget(ComfyWidgetType):
-    TYPE = "LATENT"
-
-
-LatentType = typing.Annotated[torch.Tensor, LatentWidget()]
+LatentType = gen_simple_new_type(dict[str, torch.Tensor], "LATENT")
+"""samples : Tensor [B,H,W,C]"""
 
 
 class ComboWidget(ComfyWidgetType):
@@ -149,8 +163,6 @@ __all__ = [
     "StringWidget",
     "BoolWidget",
     "ColorWidget",
-    "ImageWidget",
-    "LatentWidget",
     "ComboWidget",
     "AnyType",
     "IntType",
@@ -161,4 +173,5 @@ __all__ = [
     "ImageType",
     "LatentType",
     "ReturnUI",
+    "gen_simple_new_type",
 ]

@@ -32,20 +32,20 @@ class NodeTemplate:
     def INPUT_TYPES(cls):
         input_types = {"required": {}, "optional": {}}
         for k, v in cls._FUNCTION_SIG.parameters.items():
-            t = find_comfy_widget_type_annotation(v.annotation)
-            assert t is not None
+            comfy_widget = find_comfy_widget_type_annotation(v.annotation)
+
+            assert comfy_widget is not None
+            assert comfy_widget.required or v.default is not inspect._empty
+
             opts = {}
-            req = "required" if t.required else "optional"
-            opts = t.opts()
+            req = "required" if comfy_widget.required else "optional"
+            opts = comfy_widget.opts()
 
-            if inspect.isfunction(opts):
-                opts = opts()
-
-            t = t.type
             if v.default is not inspect._empty:
                 opts["default"] = v.default
 
-            input_types[req][k] = (t, opts)
+            tp = comfy_widget.type
+            input_types[req][k] = (tp, opts)
         return input_types
 
 

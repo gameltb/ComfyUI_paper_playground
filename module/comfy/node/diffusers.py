@@ -18,11 +18,11 @@ from ..types import (
     ComboWidget,
     BoolType,
     StringWidget,
-    ComfyWidgetType,
     ImageType,
     IntWidget,
     FloatWidget,
-    LatentWidget,
+    LatentType,
+    gen_simple_new_type,
 )
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
@@ -111,11 +111,7 @@ class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
             self.current_device = device_to
 
 
-class DiffusersPipelineWidget(ComfyWidgetType):
-    TYPE = "DIFFUSERS_PIPELINE"
-
-
-DiffusersPipelineType = typing.Annotated[DiffusersComfyModelPatcherWrapper, DiffusersPipelineWidget()]
+DiffusersPipelineType = gen_simple_new_type(DiffusersComfyModelPatcherWrapper, "DIFFUSERS_PIPELINE")
 
 
 @register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")
@@ -194,7 +190,7 @@ def diffusers_sampler_base(
     steps: IntWidget(min=1, max=10000) = 20,
     cfg: FloatWidget(min=0.0, max=100.0, step=0.1, round=0.01) = 8.0,
     scheduler: ComboWidget(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
-    latent_image: LatentWidget() = None,
+    latent_image: LatentType = None,
     denoise: FloatWidget(min=0.0, max=1.0, step=0.01) = 1.0,
     positive_prompt: StringWidget(multiline=True) = "",
     negative_prompt: StringWidget(multiline=True) = "",

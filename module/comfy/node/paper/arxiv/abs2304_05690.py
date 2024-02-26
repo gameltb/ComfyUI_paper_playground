@@ -17,8 +17,6 @@ from ....types import ComboWidget, ImageType, StringType, gen_simple_new_type
 SMPLX_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs/smplx")
 SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for filename in os.listdir(SMPLX_CONFIG_PATH)}
 
-HYBRIKX_MODEL_PATH = path_tool.get_model_filename_list(__name__, "hybrikx")
-
 
 HybrikxPipelineType = gen_simple_new_type(HybrikXPipeline, "HYBRIKX_PIPELINE")
 HybrikxFrameType = gen_simple_new_type(dict, "HYBRIKX_FRAME")

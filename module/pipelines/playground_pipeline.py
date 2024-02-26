@@ -23,11 +23,15 @@ from diffusers.configuration_utils import ConfigMixin
 
 logger = logging.getLogger(__name__)
 
+
 def _fetch_class_library_tuple(module):
-    library = module.__module__
+    library = None
+    if hasattr(module, "__module__"):
+        library = module.__module__
     class_name = module.__class__.__name__
 
     return (library, class_name)
+
 
 class PlaygroundPipeline(ConfigMixin):
     r"""

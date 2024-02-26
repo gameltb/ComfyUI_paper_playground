@@ -96,3 +96,11 @@ Put HybrIK-X rle model to `ComfyUI/models/playground/paper/arxiv/abs2304_05690/h
 Get smplx_blender_addon_300_20220623.zip from https://smpl-x.is.tue.mpg.de/.
 Use blender load /smplx_blender_addon/data/smplx_model_300_20220615.blend file in zip.  
 Use [blender_frame_import.py](module/paper/arxiv/abs2304_05690/blender_frame_import.py) to load frame.
+
+# github
+
+## [JoyTag](https://github.com/fpgaminer/joytag)
+
+JoyTag is a state of the art AI vision model for tagging images.
+
+Put https://huggingface.co/fancyfeast/joytag to `ComfyUI/models/playground/paper/github/joytag`

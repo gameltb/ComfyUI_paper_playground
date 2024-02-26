@@ -3,20 +3,15 @@ import { ComfyWidgets } from "/scripts/widgets.js";
 import { api } from "/scripts/api.js";
 
 app.registerExtension({
-  name: "gameltb.diffusers",
+  name: "gameltb.playground_utils",
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (
-      nodeData.name === "DiffusersPipelineComponentShow" ||
-      nodeData.name === "DiffusersPipelineListAdapters"
-    ) {
+    if (nodeData.name === "paper_playground_0_ShowString") {
       const onExecuted = nodeType.prototype.onExecuted;
       nodeType.prototype.onExecuted = function (message) {
         const r = onExecuted?.apply?.(this, arguments);
 
         if (this.widgets !== undefined) {
-          const pos = this.widgets.findIndex(
-            (w) => w.name === "components_map"
-          );
+          const pos = this.widgets.findIndex((w) => w.name === "string");
           if (pos !== -1) {
             for (let i = pos; i < this.widgets.length; i++) {
               this.widgets[i].onRemove?.();
@@ -25,10 +20,10 @@ app.registerExtension({
           }
         }
 
-        for (const list of message.components_map) {
+        for (const list of message.string) {
           const w = ComfyWidgets["STRING"](
             this,
-            "components_map",
+            "string",
             ["STRING", { multiline: true }],
             app
           ).widget;

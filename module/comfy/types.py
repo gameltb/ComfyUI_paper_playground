@@ -38,7 +38,7 @@ def find_comfy_widget_type_annotation(
     if isinstance(tp, ComfyWidgetType):
         return tp
     elif hasattr(tp, "__metadata__"):
-        for meta in tp.__metadata__:
+        for meta in reversed(tp.__metadata__):
             if isinstance(meta, ComfyWidgetType):
                 return meta
     return None
@@ -185,5 +185,5 @@ AnyType = typing.Annotated[typing.Any, type("AnyType", (str,), {"__ne__": lambda
 
 
 class ReturnUI(BaseModel):
-    ui: dict[str, object] = dict()
+    ui: dict[str, list[typing.Any]] = dict()
     result: tuple = tuple()

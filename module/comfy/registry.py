@@ -3,7 +3,7 @@ import re
 from functools import wraps
 import typing
 
-from .types import find_comfy_widget_type_annotation
+from .types import find_comfy_widget_type_annotation,ReturnUI
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -94,7 +94,10 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                     if comfy_widget_type_annotation is not None:
                         # Look up Combo value from mapping
                         kwargs[k] = comfy_widget_type_annotation[v]
-                return f(**kwargs)
+                results = f(**kwargs)
+                if isinstance(results, ReturnUI):
+                    results = results.model_dump()
+                return results
 
             node_attrs["exec"] = staticmethod(exec)
             node_class = type(unique_name, (NodeTemplate,), node_attrs)

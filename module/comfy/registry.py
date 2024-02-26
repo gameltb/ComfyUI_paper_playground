@@ -106,6 +106,8 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         # just check at setup
         node_class.INPUT_TYPES()
 
+        assert unique_name not in NODE_CLASS_MAPPINGS
+
         NODE_CLASS_MAPPINGS[unique_name] = node_class
         if display_name is not None:
             NODE_DISPLAY_NAME_MAPPINGS[unique_name] = display_name

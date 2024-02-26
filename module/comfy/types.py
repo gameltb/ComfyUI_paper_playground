@@ -28,7 +28,6 @@ class ComfyWidgetType(BaseModel):
         return item
 
     def __init_subclass__(cls):
-        global REGISTERED_TYPES
         assert cls.TYPE not in REGISTERED_TYPES
         REGISTERED_TYPES.add(cls.TYPE)
 

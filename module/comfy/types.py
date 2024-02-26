@@ -60,7 +60,9 @@ def gen_simple_new_type(
 
 
 def new_widget(tp, is_required: bool = True, is_forceInput: bool = True, **kwargs):
-    return find_comfy_widget_type_annotation(tp).__class__(required=is_required, forceInput=is_forceInput, **kwargs)
+    return find_comfy_widget_type_annotation(tp).model_copy(
+        update={"is_required": is_required, "forceInput": is_forceInput, **kwargs}
+    )
 
 
 class IntWidget(ComfyWidgetType):
@@ -73,6 +75,8 @@ class IntWidget(ComfyWidgetType):
 
 
 IntType = typing.Annotated[int, IntWidget()]
+IntSeedType = typing.Annotated[int, IntWidget(min=0, max=0xFFFFFFFFFFFFFFFF)]
+IntStepsType = typing.Annotated[int, IntWidget(min=1, max=10000)]
 
 
 class FloatWidget(ComfyWidgetType):
@@ -86,6 +90,9 @@ class FloatWidget(ComfyWidgetType):
 
 
 FloatType = typing.Annotated[float, FloatWidget()]
+FloatCFGType = typing.Annotated[float, FloatWidget(min=0.0, max=100.0, step=0.1, round=0.01)]
+FloatPercentageType = typing.Annotated[float, FloatWidget(min=0.0, max=1.0, step=0.01)]
+"""0 to 1, step 0.01."""
 
 
 class StringWidget(ComfyWidgetType):
@@ -95,6 +102,7 @@ class StringWidget(ComfyWidgetType):
 
 
 StringType = typing.Annotated[str, StringWidget()]
+StringMultilineType = typing.Annotated[str, StringWidget(multiline=True)]
 
 
 class BoolWidget(ComfyWidgetType):

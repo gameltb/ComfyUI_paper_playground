@@ -15,6 +15,7 @@ example node
 
 ```python
 import typing
+import os
 
 from ..registry import register_node
 from ..types import ComboWidget, gen_simple_new_type, new_widget, ComfyWidgetType
@@ -38,7 +39,7 @@ SimpleType = gen_simple_new_type(str, "SIMPLE")  # Simple TypeAlias without defi
 def example(
     widget_input1: StringWidget(),  # use widget instance as type hint , register_node will convert it to an inputType. but it is not valid for programmers.
     input1: BoolType,  # use Annotated type , This is the recommended way.
-    input2: BoolType = True,  # you can set defult value.
+    input2: BoolType = True,  # you can set default value.
     op_input1: typing.Annotated[BoolType, new_widget(BoolType, is_required=False)] = True,  # change widget property.
     combo_input0: typing.Annotated[
         str, ComboWidget(choices=["int"])
@@ -47,7 +48,7 @@ def example(
         type, ComboWidget(choices={"int": int})
     ] = None,  # with dict choices Combo widget will automatically convert key to value .
     combo_input2: typing.Annotated[
-        type, ComboWidget(choices=lambda: {"int": int})
+        str, ComboWidget(choices=lambda: os.listdir("."))
     ] = None,  # with lambda Combo widget will update list when web page refresh.
     combo_input3: typing.Annotated[
         typing.Optional[type], ComboWidget(choices=lambda: {"int": int}, ext_none_choice="none")
@@ -91,3 +92,7 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 
 Unzip model_files to directory `ComfyUI/models/playground/paper/arxiv/abs2304_05690/` .  
 Put HybrIK-X rle model to `ComfyUI/models/playground/paper/arxiv/abs2304_05690/hybrikx/`.
+
+Get smplx_blender_addon_300_20220623.zip from https://smpl-x.is.tue.mpg.de/.
+Use blender load /smplx_blender_addon/data/smplx_model_300_20220615.blend file in zip.  
+Use [blender_frame_import.py](module/paper/arxiv/abs2304_05690/blender_frame_import.py) to load frame.

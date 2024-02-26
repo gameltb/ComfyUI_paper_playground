@@ -184,6 +184,6 @@ class ComboWidget(ComfyWidgetType):
 AnyType = typing.Annotated[typing.Any, type("AnyType", (str,), {"__ne__": lambda self, value: False})("*")]
 
 
-class ReturnUI(BaseModel):
+class ReturnType(BaseModel):
     ui: dict[str, list[typing.Any]] = dict()
     result: tuple = tuple()

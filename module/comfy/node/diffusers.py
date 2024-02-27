@@ -121,6 +121,7 @@ def diffusers_from_pretrained(
     directory: ComboWidget(choices=lambda: get_diffusers_folder_paths()) = None,
     model_id: StringWidget() = "",
 ) -> tuple[DiffusersPipelineType]:
+    """Instantiate a PyTorch diffusion pipeline from pretrained pipeline weights. """
     pipeline_cls = pipeline_type
     return diffusers_from_pretrained_cls(pipeline_cls, local_files_only, directory=directory, model_id=model_id)
 

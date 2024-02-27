@@ -3,7 +3,7 @@ import re
 from functools import wraps
 import typing
 
-from .types import find_comfy_widget_type_annotation,ReturnType
+from .types import find_comfy_widget_type_annotation, ReturnType
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -12,9 +12,8 @@ PACK_BASE_CATEGORY = None
 PACK_UID = None
 
 
-
 class NodeTemplate:
-    _FUNCTION_SIG = None
+    _FUNCTION_SIG: inspect.Signature = None
     FUNCTION = "exec"
 
     @classmethod
@@ -59,6 +58,8 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         if inspect.isfunction(f):
             node_attrs = {}
             node_attrs["OUTPUT_NODE"] = output
+            if f.__doc__ is not None:
+                node_attrs["DESCRIPTION"] = f.__doc__.strip()
 
             sig = inspect.signature(f)
             node_attrs["_FUNCTION_SIG"] = sig
@@ -95,7 +96,9 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                         # Look up Combo value from mapping
                         kwargs[k] = comfy_widget_type_annotation[v]
                 results = f(**kwargs)
-                if isinstance(results, ReturnType):
+                if results is None:
+                    results = {}
+                elif isinstance(results, ReturnType):
                     results = results.model_dump()
                 return results
 

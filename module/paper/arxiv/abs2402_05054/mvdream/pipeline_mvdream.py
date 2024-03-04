@@ -15,7 +15,7 @@ from diffusers.configuration_utils import FrozenDict
 from diffusers.schedulers import DDIMScheduler
 from diffusers.utils.torch_utils import randn_tensor
 
-from mvdream.mv_unet import MultiViewUNetModel, get_camera
+from .mv_unet import MultiViewUNetModel, get_camera
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 

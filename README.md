@@ -91,6 +91,17 @@ Get smplx_blender_addon_300_20220623.zip from https://smpl-x.is.tue.mpg.de/.
 Use blender load /smplx_blender_addon/data/smplx_model_300_20220615.blend file in zip.  
 Use [blender_frame_import.py](module/paper/arxiv/abs2304_05690/blender_frame_import.py) to load frame.
 
+## [LGM: Large Multi-View Gaussian Model for High-Resolution 3D Content Creation](https://github.com/3DTopia/LGM)
+
+Refer to the README.
+
+```bash
+git clone --recursive https://github.com/ashawkey/diff-gaussian-rasterization
+pip install ./diff-gaussian-rasterization
+```
+
+Put model.safetensors in https://huggingface.co/ashawkey/LGM to `ComfyUI/models/playground/paper/arxiv/abs2402_05054`
+
 # github
 
 ## [JoyTag](https://github.com/fpgaminer/joytag)

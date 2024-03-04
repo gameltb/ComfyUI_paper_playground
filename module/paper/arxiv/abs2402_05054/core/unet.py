@@ -6,7 +6,7 @@ import numpy as np
 from typing import Tuple, Literal
 from functools import partial
 
-from core.attention import MemEffAttention
+from .attention import MemEffAttention
 
 class MVAttention(nn.Module):
     def __init__(

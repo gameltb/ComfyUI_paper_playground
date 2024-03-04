@@ -52,7 +52,7 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         if PACK_UID is None:
             raise Exception("PACK_UID is not set. Call set_pack_options in __init__.py to set it.")
 
-        node_identifier = identifier if identifier is not None else f.__name__
+        node_identifier: str = identifier if identifier is not None else f.__name__
         unique_name = f"{PACK_UID}_{version}_{node_identifier}"
 
         if inspect.isfunction(f):
@@ -115,10 +115,13 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         assert unique_name not in NODE_CLASS_MAPPINGS
 
         NODE_CLASS_MAPPINGS[unique_name] = node_class
-        if display_name is not None:
-            NODE_DISPLAY_NAME_MAPPINGS[unique_name] = display_name
-        else:
-            NODE_DISPLAY_NAME_MAPPINGS[unique_name] = " ".join(re.split("(?<=[a-z0-9])(?=[A-Z])", node_identifier))
+        node_display_name = display_name
+        if node_display_name is None:
+            if identifier is None and inspect.isfunction(f):
+                node_display_name = " ".join(x.capitalize() for x in node_identifier.lower().split("_"))
+            else:
+                node_display_name = " ".join(re.split("(?<=[a-z0-9])(?=[A-Z])", node_identifier))
+        NODE_DISPLAY_NAME_MAPPINGS[unique_name] = node_display_name
         return f
 
     return decorator

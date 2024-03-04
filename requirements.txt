@@ -1,3 +1,8 @@
 diffusers >= 0.26.0
 omegaconf
 accelerate
+
+# for lgm
+roma
+kiui
+plyfile

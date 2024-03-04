@@ -1,4 +1,3 @@
-import tyro
 from dataclasses import dataclass
 from typing import Tuple, Literal, Dict, Optional
 
@@ -76,8 +75,8 @@ class Options:
 config_defaults: Dict[str, Options] = {}
 config_doc: Dict[str, str] = {}
 
-config_doc['lrm'] = 'the default settings for LGM'
-config_defaults['lrm'] = Options()
+config_doc['default'] = 'the default settings for LGM'
+config_defaults['default'] = Options()
 
 config_doc['small'] = 'small model with lower resolution Gaussians'
 config_defaults['small'] = Options(
@@ -116,5 +115,3 @@ config_defaults['tiny'] = Options(
     gradient_accumulation_steps=1,
     mixed_precision='bf16',
 )
-
-AllConfigs = tyro.extras.subcommand_type_from_defaults(config_defaults, config_doc)

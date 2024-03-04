@@ -90,6 +90,12 @@ ID : paper_playground_0_GeneratePlaygroundNodeDocumentation
 CATEGORY : playground/utils  
 DESCRIPTION : Generate playground node documentation for user. Save to the root of the repo.  
 
+## Save Ply
+
+ID : paper_playground_0_save_ply  
+CATEGORY : playground/utils/plyfile  
+DESCRIPTION : No description.  
+
 ## Abs 2312.02145 Diffusers Pipeline From Pretrained (Marigold)
 
 ID : paper_playground_0_Abs2312_02145_DiffusersPipelineFromPretrained  
@@ -114,31 +120,43 @@ ID : paper_playground_0_Abs2312_13964_DiffusersPipelineSampler
 CATEGORY : playground/arxiv/abs2312_13964  
 DESCRIPTION : No description.  
 
-## load_hybrikx
+## Load Hybrikx
 
 ID : paper_playground_0_load_hybrikx  
 CATEGORY : playground/arxiv/abs2304_05690  
 DESCRIPTION : No description.  
 
-## run_hybrikx
+## Run Hybrikx
 
 ID : paper_playground_0_run_hybrikx  
 CATEGORY : playground/arxiv/abs2304_05690  
 DESCRIPTION : No description.  
 
-## save_hybrikx
+## Save Hybrikx
 
 ID : paper_playground_0_save_hybrikx  
 CATEGORY : playground/arxiv/abs2304_05690  
 DESCRIPTION : No description.  
 
-## load_joytag
+## Load Lgm
+
+ID : paper_playground_0_load_lgm  
+CATEGORY : playground/arxiv/abs2402_05054  
+DESCRIPTION : No description.  
+
+## Run Lgm
+
+ID : paper_playground_0_run_lgm  
+CATEGORY : playground/arxiv/abs2402_05054  
+DESCRIPTION : No description.  
+
+## Load Joytag
 
 ID : paper_playground_0_load_joytag  
 CATEGORY : playground/github/joytag  
 DESCRIPTION : No description.  
 
-## joytag_predict
+## Joytag Predict
 
 ID : paper_playground_0_joytag_predict  
 CATEGORY : playground/github/joytag  

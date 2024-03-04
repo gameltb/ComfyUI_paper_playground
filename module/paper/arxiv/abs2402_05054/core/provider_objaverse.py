@@ -9,9 +9,8 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from torch.utils.data import Dataset
 
-import kiui
-from core.options import Options
-from core.utils import get_rays, grid_distortion, orbit_camera_jitter
+from .options import Options
+from .utils import get_rays, grid_distortion, orbit_camera_jitter
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)

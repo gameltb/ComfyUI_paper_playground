@@ -38,3 +38,13 @@ def get_paper_repo_path(self_name):
     sub_path = os.path.join(*sub_key.split("."))
     full_path = os.path.join(REPO_ROOT_PATH, sub_path)
     return full_path
+
+
+def get_output_path(save_path):
+    file_name = os.path.basename(save_path)
+    folder_path = os.path.dirname(save_path)
+    if not os.path.isabs(save_path):
+        folder_path = os.path.join(folder_paths.output_directory, folder_path)
+
+    os.makedirs(folder_path, exist_ok=True)
+    return os.path.join(folder_path, file_name)

@@ -9,7 +9,7 @@ from diff_gaussian_rasterization import (
     GaussianRasterizer,
 )
 
-from core.options import Options
+from .options import Options
 
 import kiui
 
@@ -98,7 +98,7 @@ class GaussianRenderer:
         }
 
 
-    def save_ply(self, gaussians, path, compatible=True):
+    def to_ply(self, gaussians, compatible=True):
         # gaussians: [B, N, 14]
         # compatible: save pre-activated gaussians as in the original paper
 
@@ -149,13 +149,9 @@ class GaussianRenderer:
         elements[:] = list(map(tuple, attributes))
         el = PlyElement.describe(elements, 'vertex')
 
-        PlyData([el]).write(path)
+        return PlyData([el])
     
-    def load_ply(self, path, compatible=True):
-
-        from plyfile import PlyData, PlyElement
-
-        plydata = PlyData.read(path)
+    def create_from_ply(self, plydata, compatible=True):
 
         xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
                         np.asarray(plydata.elements[0]["y"]),

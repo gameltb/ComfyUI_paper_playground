@@ -9,6 +9,7 @@ from ..registry import register_node
 from ..types import ImageType, MaskType, gen_simple_new_type
 from .briarmbg.briarmbg import BriaRMBG
 from .briarmbg.utilities import preprocess_image
+from ...core.runtime_resource_management import AutoManage
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "briarmbg", "pytorch_model.bin")
 
@@ -19,10 +20,8 @@ BriaRMBGType = gen_simple_new_type(BriaRMBG, "BRIA_RMBG")
 @register_node(category="utils/rmbg")
 def load_Bria_RMBG() -> tuple[BriaRMBGType]:
     net = BriaRMBG()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = comfy.utils.load_torch_file(MODEL_PATH, safe_load=True)
     net.load_state_dict(ckpt)
-    net.to(device)
     net.eval()
 
     return (net,)
@@ -41,8 +40,9 @@ def Bria_RMBG_predict(
     orig_im_size = orig_im.shape[0:2]
     image = preprocess_image(orig_im, model_input_size).to(device)
 
-    # inference
-    result = BriaRMBG(image)
+    with AutoManage(BriaRMBG, device):
+        # inference
+        result = BriaRMBG(image)
 
     result = torch.squeeze(F.interpolate(result[0][0], size=orig_im_size, mode="bilinear"), 0)
     ma = torch.max(result)

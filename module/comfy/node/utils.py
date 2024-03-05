@@ -1,8 +1,9 @@
-from typing import Annotated
 import pathlib
+from typing import Annotated
 
+from ...core.runtime_resource_management import get_management, resources_device
 from ..registry import register_node
-from ..types import StringType, ReturnType, new_widget
+from ..types import ReturnType, StringType, new_widget
 
 
 @register_node(identifier="ShowString", category="utils", output=True)
@@ -31,3 +32,8 @@ CATEGORY : {node_category}
 DESCRIPTION : {node_description}  
 """
             )
+
+
+@register_node(category="utils", output=True)
+def free_vram():
+    get_management(resources_device("cuda")).free(1e30)

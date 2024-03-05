@@ -6,6 +6,7 @@ import torchvision.transforms.functional as TVF
 from PIL import Image
 
 from .....common import path_tool
+from .....core.runtime_resource_management import AutoManage
 from .....paper.github.joytag.Models import VisionModel
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
@@ -32,9 +33,10 @@ class JoytagPipeline(PlaygroundPipeline):
             "image": image_tensor.unsqueeze(0).to("cuda"),
         }
 
-        with torch.amp.autocast_mode.autocast("cuda", enabled=True):
-            preds = self.model(batch)
-            tag_preds = preds["tags"].sigmoid().cpu()
+        with AutoManage(self.model, torch.device("cuda")):
+            with torch.amp.autocast_mode.autocast("cuda", enabled=True):
+                preds = self.model(batch)
+                tag_preds = preds["tags"].sigmoid().cpu()
 
         scores = {self.top_tags[i]: tag_preds[0][i] for i in range(len(self.top_tags))}
         predicted_tags = [tag for tag, score in scores.items() if score > threshold]
@@ -78,7 +80,6 @@ def load_joytag() -> tuple[JoytagPipelineType]:
 
     model = VisionModel.load_model(MODEL_PATH)
     model.eval()
-    model = model.to("cuda")
 
     return (JoytagPipeline(top_tags=top_tags, model=model),)
 

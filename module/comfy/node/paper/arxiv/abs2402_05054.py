@@ -1,8 +1,6 @@
 from typing import Annotated
 
 import comfy.utils
-import torch
-import comfy.model_management
 
 from .....common import path_tool
 from .....paper.arxiv.abs2402_05054.core.models import LGM
@@ -24,13 +22,11 @@ def load_lgm(
 
     lgm_model = LGM(config_defaults[lgb_config])
 
-    ckpt = comfy.utils.load_torch_file(ckpt_path)
-
+    ckpt = comfy.utils.load_torch_file(ckpt_path, safe_load=True)
     lgm_model.load_state_dict(ckpt, strict=False)
 
     # device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    lgm_model = lgm_model.half().to(device)
+    lgm_model = lgm_model.half()
     lgm_model.eval()
 
     return (LGMPipeline(lgm_model),)
@@ -41,6 +37,5 @@ def run_lgm(
     lgm_pipeline: LGMPipelineType,
     image: ImageType,
 ) -> tuple[PlyDataType]:
-    comfy.model_management.free_memory(6 * 1024 * 1024 * 1024, torch.device("cuda", 0))
     input_image = image.cpu().float().numpy()
     return (lgm_pipeline(input_image),)

@@ -5,6 +5,7 @@ import torchvision.transforms.functional as TF
 
 from ..paper.arxiv.abs2402_05054.core.models import LGM
 from .playground_pipeline import PlaygroundPipeline
+from ..core.runtime_resource_management import AutoManage
 
 IMAGENET_DEFAULT_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_DEFAULT_STD = (0.229, 0.224, 0.225)
@@ -33,9 +34,10 @@ class LGMPipeline(PlaygroundPipeline):
         rays_embeddings = self.lgm.prepare_default_rays(device, elevation=input_elevation)
         input_image = torch.cat([input_image, rays_embeddings], dim=1).unsqueeze(0)  # [1, 4, 9, H, W]
 
-        with torch.autocast(device_type=device, dtype=torch.float16):
-            # generate gaussians
-            gaussians = self.lgm.forward_gaussians(input_image)
+        with AutoManage(self.lgm, device):
+            with torch.autocast(device_type=device, dtype=torch.float16):
+                # generate gaussians
+                gaussians = self.lgm.forward_gaussians(input_image)
 
         # save gaussians
         return self.lgm.gs.to_ply(gaussians)

@@ -117,7 +117,7 @@ MaskType = gen_simple_new_type(torch.Tensor, "MASK")
 """Tensor [B,H,W]"""
 
 ImageType = gen_simple_new_type(torch.Tensor, "IMAGE")
-"""Tensor [B,H,W,C]"""
+"""Tensor [B,H,W,C] float32 cpu"""
 
 LatentType = gen_simple_new_type(dict[str, torch.Tensor], "LATENT")
 """samples : Tensor [B,H,W,C]"""

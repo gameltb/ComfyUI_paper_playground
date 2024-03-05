@@ -21,3 +21,7 @@ for node_type in ["arxiv", "github"]:
         except Exception as e:
             traceback.print_exc()
             print(f"Cannot import {file_name} module :", e)
+try:
+    from .node import rmbg
+except:
+    pass

@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import psutil
 import torch
+import diffusers
 
 resources_device = torch.device
 
@@ -16,10 +17,15 @@ class AutoManage:
         offload_device=resources_device("cpu"),
         inference_memory_size=1024 * 1024 * 1024,
     ) -> None:
-        if isinstance(obj, torch.nn.Module):
+        if not isinstance(obj, ResourcesUser):
             user = ResourcesManagement.find_user(obj)
             if user is None:
-                user = TorchModuleWrapper(obj, runtime_device, offload_device)
+                if isinstance(obj, torch.nn.Module):
+                    user = TorchModuleWrapper(obj, runtime_device, offload_device)
+                elif isinstance(obj, diffusers.DiffusionPipeline):
+                    user = DiffusersPipelineWrapper(obj, runtime_device, offload_device)
+                else:
+                    raise NotImplementedError()
                 ResourcesManagement.add_user(user)
             obj = user
         assert isinstance(obj, ResourcesUser)
@@ -73,7 +79,7 @@ class TorchModuleWrapper(ResourcesUser):
         except Exception:
             origin_keep_in_load = self.keep_in_load
             self.keep_in_load = True
-            self.runtime_management.free(self.module_size(self.torch_model))
+            self.runtime_management.free(self.module_size(self.torch_model) + self.inference_memory_size)
             self.keep_in_load = origin_keep_in_load
 
             self.torch_model.to(device=self.runtime_management.device)
@@ -89,6 +95,38 @@ class TorchModuleWrapper(ResourcesUser):
             t = sd[k]
             module_mem += t.nelement() * t.element_size()
         return module_mem
+
+
+class DiffusersPipelineWrapper(ResourcesUser):
+    def __init__(self, pipeline: diffusers.DiffusionPipeline, runtime_device, offload_device) -> None:
+        super().__init__()
+        self.pipeline = pipeline
+        self.runtime_management = get_management(runtime_device)
+        self.offload_management = get_management(offload_device)
+
+    @property
+    def manage_object(self):
+        return self.pipeline
+
+    def load(self, device: Optional[resources_device] = None):
+        origin_keep_in_load = self.keep_in_load
+        self.keep_in_load = True
+        self.runtime_management.free(self.pipeline_size(self.pipeline) + self.inference_memory_size)
+        self.keep_in_load = origin_keep_in_load
+
+        if not hasattr(self.pipeline, "_all_hooks") or len(self.pipeline._all_hooks) == 0:
+            self.pipeline.enable_model_cpu_offload(device=self.runtime_management.device)
+
+    def offload(self, device: Optional[resources_device] = None):
+        self.pipeline.maybe_free_model_hooks()
+
+    @staticmethod
+    def pipeline_size(pipeline: diffusers.DiffusionPipeline):
+        pipe_mem = 0
+        for comp_name, comp in pipeline.components.items():
+            if isinstance(comp, torch.nn.Module):
+                pipe_mem += TorchModuleWrapper.module_size(comp)
+        return pipe_mem
 
 
 class ResourcesManagement:

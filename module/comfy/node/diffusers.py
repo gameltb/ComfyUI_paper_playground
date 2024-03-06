@@ -2,7 +2,7 @@ import copy
 import inspect
 import json
 import os
-import typing
+from typing import Annotated
 
 import diffusers
 import torch
@@ -22,7 +22,13 @@ from ..types import (
     IntWidget,
     FloatWidget,
     LatentType,
+    StringType,
+    IntSeedType,
+    IntStepsType,
+    FloatCFGType,
+    FloatPercentageType,
     gen_simple_new_type,
+    StringMultilineType,
 )
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
@@ -119,9 +125,9 @@ def diffusers_from_pretrained(
     pipeline_type: ComboWidget(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = DiffusionPipeline.__name__,
     local_files_only: BoolType = True,
     directory: ComboWidget(choices=lambda: get_diffusers_folder_paths()) = None,
-    model_id: StringWidget() = "",
+    model_id: StringType = "",
 ) -> tuple[DiffusersPipelineType]:
-    """Instantiate a PyTorch diffusion pipeline from pretrained pipeline weights. """
+    """Instantiate a PyTorch diffusion pipeline from pretrained pipeline weights."""
     pipeline_cls = pipeline_type
     return diffusers_from_pretrained_cls(pipeline_cls, local_files_only, directory=directory, model_id=model_id)
 
@@ -187,14 +193,14 @@ def diffusers_from_single_file(
 @register_node(identifier="DiffusersPipelineSamplerBase", category="sampling")
 def diffusers_sampler_base(
     diffusers_pipeline: DiffusersPipelineType,
-    seed: IntWidget(min=0, max=0xFFFFFFFFFFFFFFFF) = 0,
-    steps: IntWidget(min=1, max=10000) = 20,
-    cfg: FloatWidget(min=0.0, max=100.0, step=0.1, round=0.01) = 8.0,
+    seed: IntSeedType,
+    steps: IntStepsType = 20,
+    cfg: FloatCFGType = 8.0,
     scheduler: ComboWidget(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
     latent_image: LatentType = None,
-    denoise: FloatWidget(min=0.0, max=1.0, step=0.01) = 1.0,
-    positive_prompt: StringWidget(multiline=True) = "",
-    negative_prompt: StringWidget(multiline=True) = "",
+    denoise: FloatPercentageType = 1.0,
+    positive_prompt: StringMultilineType = "",
+    negative_prompt: StringMultilineType = "",
 ) -> tuple[ImageType]:
     pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
     latent = latent_image["samples"]

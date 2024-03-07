@@ -29,12 +29,14 @@ class JoytagPipeline(PlaygroundPipeline):
     @torch.no_grad()
     def __call__(self, input_image: Image.Image, threshold: int):
         image_tensor = prepare_image(input_image, self.model.image_size)
-        batch = {
-            "image": image_tensor.unsqueeze(0).to("cuda"),
-        }
 
-        with AutoManage(self.model, torch.device("cuda")):
-            with torch.amp.autocast_mode.autocast("cuda", enabled=True):
+        with AutoManage(self.model) as am:
+            device = am.get_device()
+            batch = {
+                "image": image_tensor.unsqueeze(0).to(device),
+            }
+
+            with torch.amp.autocast_mode.autocast(device, enabled=True):
                 preds = self.model(batch)
                 tag_preds = preds["tags"].sigmoid().cpu()
 

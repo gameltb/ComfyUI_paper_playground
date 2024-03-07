@@ -1,16 +1,13 @@
-import os
-from dataclasses import dataclass
-
 import numpy as np
 import torch
 from torchvision import transforms as T
 from torchvision.models.detection import FasterRCNN
 
+from ..core.runtime_resource_management import AutoManage
 from ..paper.arxiv.abs2304_05690.hybrik.models import HRNetSMPLXCamKidReg
 from ..paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3DSMPLX
 from ..paper.arxiv.abs2304_05690.hybrik.utils.vis import get_one_box
 from .playground_pipeline import PlaygroundPipeline
-
 
 det_transform = T.Compose([T.ToTensor()])
 
@@ -99,15 +96,16 @@ class HybrikXPipeline(PlaygroundPipeline):
     @torch.no_grad()
     def __call__(self, input_image):
         # Run Detection
-        det_input = det_transform(input_image).cuda()
-        det_output = self.det_model([det_input])[0]
+        with AutoManage(self.det_model) as am:
+            det_input = det_transform(input_image).to(device=am.get_device())
+            det_output = self.det_model([det_input])[0]
 
-        self._tight_bbox = get_one_box(det_output)  # xyxy
+            self._tight_bbox = get_one_box(det_output)  # xyxy
 
-        # Run HybrIK
-        # bbox: [x1, y1, x2, y2]
-        pose_input, bbox, img_center = self.transformation.test_transform(input_image.copy(), self._tight_bbox)
-        pose_input = pose_input[None, :, :, :].cuda()
+            # Run HybrIK
+            # bbox: [x1, y1, x2, y2]
+            pose_input, bbox, img_center = self.transformation.test_transform(input_image.copy(), self._tight_bbox)
+            pose_input = pose_input[None, :, :, :].to(device=am.get_device())
 
         """
         pose_input_192 = pose_input[:, :, :, 32:-32].clone()
@@ -133,15 +131,15 @@ class HybrikXPipeline(PlaygroundPipeline):
         al_fb_pts[:, 0] = al_fb_pts[:, 0] + bbox_xywh[0]
         al_fb_pts[:, 1] = al_fb_pts[:, 1] + bbox_xywh[1]
         """
-
-        pose_output = self.hybrik_model(
-            pose_input,
-            flip_test=True,
-            bboxes=torch.from_numpy(np.array(bbox)).to(pose_input.device).unsqueeze(0).float(),
-            img_center=torch.from_numpy(img_center).to(pose_input.device).unsqueeze(0).float(),
-            # al_hands=hand_uv_jts.to(pose_input.device).unsqueeze(0).float(),
-            # al_hands_leaf=hand_leaf_uv_jts.to(pose_input.device).unsqueeze(0).float(),
-        )
+        with AutoManage(self.hybrik_model) as am:
+            pose_output = self.hybrik_model(
+                pose_input,
+                flip_test=True,
+                bboxes=torch.from_numpy(np.array(bbox)).to(pose_input.device).unsqueeze(0).float(),
+                img_center=torch.from_numpy(img_center).to(pose_input.device).unsqueeze(0).float(),
+                # al_hands=hand_uv_jts.to(pose_input.device).unsqueeze(0).float(),
+                # al_hands_leaf=hand_leaf_uv_jts.to(pose_input.device).unsqueeze(0).float(),
+            )
 
         uv_jts = pose_output.pred_uvd_jts.reshape(-1, 3)[:, :2]
         # uv_jts[25:55, :2] = hand_uv_jts

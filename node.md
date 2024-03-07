@@ -48,12 +48,6 @@ ID : paper_playground_0_DiffusersPipelineListAdapters
 CATEGORY : playground/tool  
 DESCRIPTION : No description.  
 
-## Diffusers Pipeline Optimization
-
-ID : paper_playground_0_DiffusersPipelineOptimization  
-CATEGORY : playground/tool  
-DESCRIPTION : No description.  
-
 ## Diffusers Load Lora
 
 ID : paper_playground_0_DiffusersLoadLora  
@@ -89,6 +83,12 @@ DESCRIPTION : No description.
 ID : paper_playground_0_GeneratePlaygroundNodeDocumentation  
 CATEGORY : playground/utils  
 DESCRIPTION : Generate playground node documentation for user. Save to the root of the repo.  
+
+## Free Vram
+
+ID : paper_playground_0_free_vram  
+CATEGORY : playground/utils  
+DESCRIPTION : No description.  
 
 ## Save Ply
 
@@ -160,4 +160,16 @@ DESCRIPTION : No description.
 
 ID : paper_playground_0_joytag_predict  
 CATEGORY : playground/github/joytag  
+DESCRIPTION : No description.  
+
+## Load Bria Rmbg
+
+ID : paper_playground_0_load_Bria_RMBG  
+CATEGORY : playground/utils/rmbg  
+DESCRIPTION : No description.  
+
+## Bria Rmbg Predict
+
+ID : paper_playground_0_Bria_RMBG_predict  
+CATEGORY : playground/utils/rmbg  
 DESCRIPTION : No description.  

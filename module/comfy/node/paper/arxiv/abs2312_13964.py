@@ -1,23 +1,19 @@
 import copy
 
+import comfy.model_management
+import comfy.utils
 import torch
 from diffusers import DDIMScheduler, StableDiffusionPipeline, UNet2DConditionModel
 
-import comfy.model_management
-import comfy.model_patcher
-import comfy.utils
-
 from .....common import path_tool
+from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_13964.animatediff.models.resnet import InflatedConv3d
 from .....paper.arxiv.abs2312_13964.animatediff.models.unet import UNet3DConditionModel
 from .....paper.arxiv.abs2312_13964.animatediff.pipelines import I2VPipeline
 from ....registry import register_node
-from ...diffusers import DiffusersComfyModelPatcherWrapper
 
 
-def UNet3DConditionModel_from_unet_2d(
-    unet_2d: UNet2DConditionModel, unet_additional_kwargs
-):
+def UNet3DConditionModel_from_unet_2d(unet_2d: UNet2DConditionModel, unet_additional_kwargs):
     config = copy.deepcopy(unet_2d.config)
     config["_class_name"] = UNet3DConditionModel.__name__
     config["down_block_types"] = [
@@ -64,16 +60,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
 
     def build_pipeline(self, base_pipeline, pia_unet_name, dreambooth_pipeline=None):
         pia_unet_path = path_tool.get_model_full_path(__name__, "pia", pia_unet_name)
-
-        pipeline_comfy_model_patcher_wrapper = base_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = (
-            pipeline_comfy_model_patcher_wrapper.model
-        )
-        if dreambooth_pipeline is not None:
-            dreambooth_pipeline_comfy_model_patcher_wrapper = dreambooth_pipeline
-            dreambooth_pipeline: StableDiffusionPipeline = (
-                dreambooth_pipeline_comfy_model_patcher_wrapper.model
-            )
+        diffusers_pipeline: StableDiffusionPipeline = base_pipeline
 
         unet_additional_kwargs = {
             "use_motion_module": True,
@@ -122,9 +109,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
 
         if dreambooth_pipeline is not None:
             # load unet
-            converted_unet_checkpoint = dreambooth_pipeline.components.get(
-                "unet"
-            ).state_dict()
+            converted_unet_checkpoint = dreambooth_pipeline.components.get("unet").state_dict()
 
             old_value = converted_unet_checkpoint["conv_in.weight"]
             new_param = unet_ckpt["conv_in.weight"][:, 4:, :, :].clone().cpu()
@@ -156,14 +141,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
             dtype=comfy.model_management.unet_dtype(),
         )
 
-        pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-            pia_pipeline,
-            load_device=comfy.model_management.get_torch_device(),
-            offload_device=comfy.model_management.unet_offload_device(),
-            size=1,
-        )
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+        return (pia_pipeline,)
 
 
 @register_node(display_name="Abs 2312.13964 Diffusers Pipeline Sampler (PIA)")
@@ -203,30 +181,13 @@ class Abs2312_13964_DiffusersPipelineSampler:
         positive_prompt,
         negative_prompt,
     ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: I2VPipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
-
         if magnitude is not None:
             mask_sim_range = [magnitude]
 
         if style_transfer:
-            mask_sim_range = [
-                -1 * magnitude - 1 if magnitude >= 0 else magnitude
-                for magnitude in mask_sim_range
-            ]
+            mask_sim_range = [-1 * magnitude - 1 if magnitude >= 0 else magnitude for magnitude in mask_sim_range]
         elif loop:
-            mask_sim_range = [
-                magnitude + 3 if magnitude >= 0 else magnitude
-                for magnitude in mask_sim_range
-            ]
-
-        generator = torch.Generator(
-            device=pipeline_comfy_model_patcher_wrapper.load_device
-        )
-        generator.manual_seed(seed)
-        # seed_everything(config.generate.global_seed)
+            mask_sim_range = [magnitude + 3 if magnitude >= 0 else magnitude for magnitude in mask_sim_range]
 
         sim_ranges = mask_sim_range
         if isinstance(sim_ranges, int):
@@ -243,22 +204,27 @@ class Abs2312_13964_DiffusersPipelineSampler:
             pbar.update(i)
             return {}
 
-        for sim_range in sim_ranges:
-            print(f"using sim_range : {sim_range}")
-            mask_sim_range = sim_range
-            sample = diffusers_pipeline(
-                image=image,
-                prompt=positive_prompt,
-                generator=generator,
-                video_length=video_length,
-                height=sample_height,
-                width=sample_width,
-                negative_prompt=negative_prompt,
-                mask_sim_template_idx=mask_sim_range,
-                num_inference_steps=steps,
-                cond_frame=0,
-                callback=callback_on_step_end,
-                callback_steps=1,
-            ).videos
+        with AutoManage(diffusers_pipeline) as am:
+            generator = torch.Generator(device=am.get_device())
+            generator.manual_seed(seed)
+            # seed_everything(config.generate.global_seed)
+
+            for sim_range in sim_ranges:
+                print(f"using sim_range : {sim_range}")
+                mask_sim_range = sim_range
+                sample = diffusers_pipeline(
+                    image=image,
+                    prompt=positive_prompt,
+                    generator=generator,
+                    video_length=video_length,
+                    height=sample_height,
+                    width=sample_width,
+                    negative_prompt=negative_prompt,
+                    mask_sim_template_idx=mask_sim_range,
+                    num_inference_steps=steps,
+                    cond_frame=0,
+                    callback=callback_on_step_end,
+                    callback_steps=1,
+                ).videos
 
         return (sample[0].permute(1, 2, 3, 0),)

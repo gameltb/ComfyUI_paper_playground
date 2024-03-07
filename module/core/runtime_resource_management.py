@@ -2,9 +2,9 @@ import gc
 import sys
 from typing import Any, Optional
 
+import diffusers
 import psutil
 import torch
-import diffusers
 
 resources_device = torch.device
 
@@ -13,17 +13,21 @@ class AutoManage:
     def __init__(
         self,
         obj,
-        runtime_device,
+        runtime_device=None,
         offload_device=resources_device("cpu"),
         inference_memory_size=1024 * 1024 * 1024,
     ) -> None:
+        if runtime_device is None:
+            device_strategy = FixDeviceStrategy()
+        else:
+            device_strategy = FixDeviceStrategy(runtime_device, offload_device)
         if not isinstance(obj, ResourcesUser):
             user = ResourcesManagement.find_user(obj)
             if user is None:
                 if isinstance(obj, torch.nn.Module):
-                    user = TorchModuleWrapper(obj, runtime_device, offload_device)
+                    user = TorchModuleWrapper(obj, device_strategy)
                 elif isinstance(obj, diffusers.DiffusionPipeline):
-                    user = DiffusersPipelineWrapper(obj, runtime_device, offload_device)
+                    user = DiffusersPipelineWrapper(obj, device_strategy)
                 else:
                     raise NotImplementedError()
                 ResourcesManagement.add_user(user)
@@ -35,16 +39,57 @@ class AutoManage:
     def __enter__(self):
         self.user.keep_in_load = True
         self.user.load()
+        return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any):
         self.user.keep_in_load = False
+
+    def get_device(self):
+        return self.user.device_strategy.get_runtime_device()
+
+
+class DeviceStrategy:
+    def free_runtime_device(self):
+        raise NotImplementedError()
+
+    def free_offload_device(self):
+        raise NotImplementedError()
+
+    def get_runtime_device(self):
+        raise NotImplementedError()
+
+    def get_offload_device(self):
+        raise NotImplementedError()
+
+    def is_manage_by(self, management):
+        raise NotImplementedError()
+
+
+class FixDeviceStrategy(DeviceStrategy):
+    def __init__(self, runtime_device=resources_device("cuda", 0), offload_device=resources_device("cpu")) -> None:
+        self.runtime_management = get_management(runtime_device)
+        self.offload_management = get_management(offload_device)
+
+    def free_runtime_device(self, size: int):
+        return self.runtime_management.free(size)
+
+    def free_offload_device(self, size: int):
+        return self.offload_management.free(size)
+
+    def get_runtime_device(self):
+        return self.runtime_management.device
+
+    def get_offload_device(self):
+        return self.offload_management.device
+
+    def is_manage_by(self, management):
+        return management is self.runtime_management
 
 
 class ResourcesUser:
     def __init__(self) -> None:
         self.keep_in_load = False
-        self.runtime_management = None
-        self.offload_management = None
+        self.device_strategy = DeviceStrategy()
         self.inference_memory_size = 0
 
     @property
@@ -63,11 +108,10 @@ class TorchStateDictWrapper(ResourcesUser):
 
 
 class TorchModuleWrapper(ResourcesUser):
-    def __init__(self, torch_model: torch.nn.Module, runtime_device, offload_device) -> None:
+    def __init__(self, torch_model: torch.nn.Module, device_strategy: DeviceStrategy) -> None:
         super().__init__()
         self.torch_model = torch_model
-        self.runtime_management = get_management(runtime_device)
-        self.offload_management = get_management(offload_device)
+        self.device_strategy = device_strategy
 
     @property
     def manage_object(self):
@@ -75,17 +119,17 @@ class TorchModuleWrapper(ResourcesUser):
 
     def load(self, device: Optional[resources_device] = None):
         try:
-            self.torch_model.to(device=self.runtime_management.device)
+            self.torch_model.to(device=self.device_strategy.get_runtime_device())
         except Exception:
             origin_keep_in_load = self.keep_in_load
             self.keep_in_load = True
-            self.runtime_management.free(self.module_size(self.torch_model) + self.inference_memory_size)
+            self.device_strategy.free_runtime_device(self.module_size(self.torch_model) + self.inference_memory_size)
             self.keep_in_load = origin_keep_in_load
 
-            self.torch_model.to(device=self.runtime_management.device)
+            self.torch_model.to(device=self.device_strategy.get_runtime_device())
 
     def offload(self, device: Optional[resources_device] = None):
-        self.torch_model.to(device=self.offload_management.device)
+        self.torch_model.to(device=self.device_strategy.get_offload_device())
 
     @staticmethod
     def module_size(module: torch.nn.Module):
@@ -98,11 +142,10 @@ class TorchModuleWrapper(ResourcesUser):
 
 
 class DiffusersPipelineWrapper(ResourcesUser):
-    def __init__(self, pipeline: diffusers.DiffusionPipeline, runtime_device, offload_device) -> None:
+    def __init__(self, pipeline: diffusers.DiffusionPipeline, device_strategy: DeviceStrategy) -> None:
         super().__init__()
         self.pipeline = pipeline
-        self.runtime_management = get_management(runtime_device)
-        self.offload_management = get_management(offload_device)
+        self.device_strategy = device_strategy
 
     @property
     def manage_object(self):
@@ -111,14 +154,20 @@ class DiffusersPipelineWrapper(ResourcesUser):
     def load(self, device: Optional[resources_device] = None):
         origin_keep_in_load = self.keep_in_load
         self.keep_in_load = True
-        self.runtime_management.free(self.pipeline_size(self.pipeline) + self.inference_memory_size)
+        self.device_strategy.free_runtime_device(self.pipeline_size(self.pipeline) + self.inference_memory_size)
         self.keep_in_load = origin_keep_in_load
 
-        if not hasattr(self.pipeline, "_all_hooks") or len(self.pipeline._all_hooks) == 0:
-            self.pipeline.enable_model_cpu_offload(device=self.runtime_management.device)
+        if self.pipeline.model_cpu_offload_seq is not None:
+            if not hasattr(self.pipeline, "_all_hooks") or len(self.pipeline._all_hooks) == 0:
+                self.pipeline.enable_model_cpu_offload(device=self.device_strategy.get_runtime_device())
+        else:
+            self.pipeline.to(self.device_strategy.get_runtime_device())
 
     def offload(self, device: Optional[resources_device] = None):
-        self.pipeline.maybe_free_model_hooks()
+        if self.pipeline.model_cpu_offload_seq is not None:
+            self.pipeline.maybe_free_model_hooks()
+        else:
+            self.pipeline.to(self.device_strategy.get_offload_device())
 
     @staticmethod
     def pipeline_size(pipeline: diffusers.DiffusionPipeline):
@@ -143,11 +192,13 @@ class ResourcesManagement:
             return
 
         self.clean_user()
+        if self.get_free() > size:
+            return
 
         for user in self.resources_users:
             if user.keep_in_load:
                 continue
-            if user.runtime_management is self:
+            if user.device_strategy.is_manage_by(self):
                 user.offload()
             if self.get_free() > size:
                 return
@@ -159,7 +210,7 @@ class ResourcesManagement:
         except Exception:
             pass
 
-        if self.get_free() > size:
+        if self.get_free() < size:
             print("The required ram is not satisfied.")
 
     @classmethod

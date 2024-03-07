@@ -73,8 +73,6 @@ def load_hybrikx(
     else:
         hybrik_model.load_state_dict(save_dict)
 
-    det_model.cuda()
-    hybrik_model.cuda()
     det_model.eval()
     hybrik_model.eval()
 

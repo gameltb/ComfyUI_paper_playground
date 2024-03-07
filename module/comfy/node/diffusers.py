@@ -2,33 +2,29 @@ import copy
 import inspect
 import json
 import os
-from typing import Annotated
+from typing import Annotated, Union
 
+import comfy.model_management
+import comfy.utils
 import diffusers
+import folder_paths
 import torch
 from diffusers import DiffusionPipeline, StableDiffusionPipeline
 
-import comfy.model_management
-import comfy.model_patcher
-import comfy.utils
-import folder_paths
-
+from ...core.runtime_resource_management import AutoManage
 from ..registry import register_node
 from ..types import (
-    ComboWidget,
     BoolType,
-    StringWidget,
-    ImageType,
-    IntWidget,
-    FloatWidget,
-    LatentType,
-    StringType,
-    IntSeedType,
-    IntStepsType,
+    ComboWidget,
     FloatCFGType,
     FloatPercentageType,
-    gen_simple_new_type,
+    ImageType,
+    IntSeedType,
+    IntStepsType,
+    LatentType,
     StringMultilineType,
+    StringType,
+    gen_simple_new_type,
 )
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
@@ -97,27 +93,11 @@ def get_diffusers_ip_adapter_paths():
     return paths
 
 
-class DiffusersComfyModelPatcherWrapper(comfy.model_patcher.ModelPatcher):
-    def __init__(self, *args, enable_sequential_cpu_offload=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.enable_sequential_cpu_offload = enable_sequential_cpu_offload
-
-    def patch_model(self, device_to=None):
-        if device_to is not None:
-            if not self.enable_sequential_cpu_offload:
-                self.model.to(device=device_to)
-            self.current_device = device_to
-
-        return self.model
-
-    def unpatch_model(self, device_to=None):
-        if device_to is not None:
-            if not self.enable_sequential_cpu_offload:
-                self.model.to(device=device_to)
-            self.current_device = device_to
-
-
-DiffusersPipelineType = gen_simple_new_type(DiffusersComfyModelPatcherWrapper, "DIFFUSERS_PIPELINE")
+DiffusersPipelineType = gen_simple_new_type(DiffusionPipeline, "DIFFUSERS_PIPELINE")
+DiffusersComponentType = gen_simple_new_type(
+    Union[diffusers.ModelMixin, diffusers.SchedulerMixin], "DIFFUSERS_COMPONENT"
+)
+DiffusersLoRAType = gen_simple_new_type(dict[str, torch.Tensor], "DIFFUSERS_LORA")
 
 
 @register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")
@@ -144,14 +124,7 @@ def diffusers_from_pretrained_cls(pipeline_cls, local_files_only=True, directory
         local_files_only=local_files_only,
     ).to(device=comfy.model_management.unet_offload_device())
 
-    pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-        pipeline,
-        load_device=comfy.model_management.get_torch_device(),
-        offload_device=comfy.model_management.unet_offload_device(),
-        size=1,
-    )
-
-    return (pipeline_comfy_model_patcher_wrapper,)
+    return (pipeline,)
 
 
 SINGLE_FILE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "diffusers_config")
@@ -180,14 +153,7 @@ def diffusers_from_single_file(
         original_config_file=single_file_config_file,
     ).to(device=comfy.model_management.unet_offload_device())
 
-    pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-        pipeline,
-        load_device=comfy.model_management.get_torch_device(),
-        offload_device=comfy.model_management.unet_offload_device(),
-        size=1,
-    )
-
-    return (pipeline_comfy_model_patcher_wrapper,)
+    return (pipeline,)
 
 
 @register_node(identifier="DiffusersPipelineSamplerBase", category="sampling")
@@ -202,17 +168,11 @@ def diffusers_sampler_base(
     positive_prompt: StringMultilineType = "",
     negative_prompt: StringMultilineType = "",
 ) -> tuple[ImageType]:
-    pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
     latent = latent_image["samples"]
     batch, _, height, width = latent.shape
-    generator = torch.Generator(device="cuda").manual_seed(seed)
     output_type = "pt"
     if False:
         output_type = "latent"
-
-    comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
-
-    diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
 
     if scheduler is not None:
         diffusers_pipeline.scheduler = scheduler.from_config(diffusers_pipeline.scheduler.config)
@@ -223,373 +183,146 @@ def diffusers_sampler_base(
         pbar.update(i)
         return {}
 
-    output = diffusers_pipeline(
-        prompt=positive_prompt,
-        height=height * 8,
-        width=width * 8,
-        num_inference_steps=steps,
-        guidance_scale=cfg,
-        negative_prompt=negative_prompt,
-        num_images_per_prompt=batch,
-        generator=generator,
-        output_type=output_type,
-        callback_on_step_end=callback_on_step_end,
-    )
+    with AutoManage(diffusers_pipeline) as am:
+        generator = torch.Generator(device=am.get_device()).manual_seed(seed)
+
+        output = diffusers_pipeline(
+            prompt=positive_prompt,
+            height=height * 8,
+            width=width * 8,
+            num_inference_steps=steps,
+            guidance_scale=cfg,
+            negative_prompt=negative_prompt,
+            num_images_per_prompt=batch,
+            generator=generator,
+            output_type=output_type,
+            callback_on_step_end=callback_on_step_end,
+        )
 
     return (output.images.permute(0, 2, 3, 1),)
 
 
-@register_node()
-class DiffusersComponentFromPretrained:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "component_type": (
-                    ["AUTO"] + list(DIFFUSERS_MODEL_CLASS_MAP.keys()) + list(DIFFUSERS_SCHEDULER_CLASS_MAP.keys()),
-                ),
-                "local_files_only": ("BOOLEAN", {"default": True}),
-            },
-            "optional": {
-                "directory": (get_diffusers_component_folder_paths(),),
-                "model_id": ("STRING", {"default": ""}),
-                "subfolder": ("STRING", {"default": ""}),
-            },
-        }
+@register_node(identifier="DiffusersComponentFromPretrained", category="loaders")
+def diffusers_component_from_pretrained(
+    component_type: Annotated[
+        type[DiffusersComponentType],
+        ComboWidget(choices=DIFFUSERS_MODEL_CLASS_MAP | DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="AUTO"),
+    ],
+    local_files_only: BoolType = True,
+    directory: Annotated[str, ComboWidget(choices=lambda: get_diffusers_component_folder_paths())] = "",
+    model_id: StringType = "",
+    subfolder: StringType = "",
+) -> tuple[DiffusersComponentType]:
+    pretrained_model_name_or_path: str = model_id
+    if pretrained_model_name_or_path is None or len(pretrained_model_name_or_path.strip()) == 0:
+        pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
 
-    RETURN_TYPES = ("DIFFUSERS_COMPONENT",)
-    FUNCTION = "from_pretrained"
+    if subfolder is not None and len(subfolder.strip()) == 0:
+        subfolder = None
 
-    CATEGORY = "playground/loaders"
+    if component_type is None:
+        component_type = diffusers.ModelMixin
 
-    def from_pretrained(
-        self,
-        component_type,
-        local_files_only,
-        directory=None,
-        model_id=None,
-        subfolder=None,
-    ):
-        pretrained_model_name_or_path: str = model_id
-        if pretrained_model_name_or_path == None or len(pretrained_model_name_or_path.strip()) == 0:
-            pretrained_model_name_or_path = find_full_diffusers_folder_path(directory)
+    component = component_type.from_pretrained(
+        pretrained_model_name_or_path=pretrained_model_name_or_path,
+        subfolder=subfolder,
+        torch_dtype=comfy.model_management.unet_dtype(),
+        local_files_only=local_files_only,
+    ).to(device=comfy.model_management.unet_offload_device())
 
-        if subfolder != None and len(subfolder.strip()) == 0:
-            subfolder = None
-
-        if component_type != "AUTO":
-            component_cls = DIFFUSERS_MODEL_CLASS_MAP.get(
-                component_type, DIFFUSERS_SCHEDULER_CLASS_MAP.get(component_type, None)
-            )
-        else:
-            component_cls = diffusers.ModelMixin
-
-        component = component_cls.from_pretrained(
-            pretrained_model_name_or_path=pretrained_model_name_or_path,
-            subfolder=subfolder,
-            torch_dtype=comfy.model_management.unet_dtype(),
-            local_files_only=local_files_only,
-        ).to(device=comfy.model_management.unet_offload_device())
-
-        return (component,)
+    return (component,)
 
 
-@register_node()
-class DiffusersPipelineComponentSet:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "diffusers_component": ("DIFFUSERS_COMPONENT",),
-                "component_key": ("STRING", {"default": "auto"}),
-            }
-        }
+@register_node(identifier="DiffusersPipelineComponentSet", category="tool")
+def set_component(
+    diffusers_pipeline: DiffusersPipelineType,
+    diffusers_component: DiffusersComponentType,
+    component_key: StringType = "auto",
+) -> tuple[DiffusersPipelineType]:
+    diffusers_component.to(dtype=diffusers_pipeline.dtype)
 
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "set_component"
-
-    CATEGORY = "playground/tool"
-
-    def set_component(self, diffusers_pipeline, diffusers_component, component_key):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        diffusers_component.to(dtype=diffusers_pipeline.dtype)
-
-        if component_key == "auto":
-            for k, v in diffusers_pipeline.components.items():
-                if type(v) == type(diffusers_component):
-                    component_key = k
-                    break
-
-        new_component_map = copy.copy(diffusers_pipeline.components)
-        new_component_map[component_key] = diffusers_component
-        diffusers_pipeline = diffusers_pipeline.__class__(**new_component_map)
-
-        pipeline_comfy_model_patcher_wrapper = DiffusersComfyModelPatcherWrapper(
-            diffusers_pipeline,
-            load_device=comfy.model_management.get_torch_device(),
-            offload_device=comfy.model_management.unet_offload_device(),
-            size=1,
-        )
-
-        return (pipeline_comfy_model_patcher_wrapper,)
-
-
-@register_node()
-class DiffusersPipelineComponentGet:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "component_key": ("STRING", {"default": ""}),
-            }
-        }
-
-    RETURN_TYPES = ("DIFFUSERS_COMPONENT",)
-    FUNCTION = "get_component"
-
-    CATEGORY = "playground/tool"
-
-    def get_component(self, diffusers_pipeline, component_key):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        return (diffusers_pipeline.components.get(component_key),)
-
-
-@register_node()
-class DiffusersPipelineComponentShow:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-            }
-        }
-
-    RETURN_TYPES = ()
-    FUNCTION = "show_component"
-
-    OUTPUT_NODE = True
-
-    CATEGORY = "playground/tool"
-
-    def show_component(self, diffusers_pipeline):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        components_map = {}
+    if component_key == "auto":
         for k, v in diffusers_pipeline.components.items():
-            components_map[k] = str(type(v))
+            if type(v) == type(diffusers_component):
+                component_key = k
+                break
 
-        return {"ui": {"components_map": [json.dumps(components_map, indent=4)]}}
+    new_component_map = copy.copy(diffusers_pipeline.components)
+    new_component_map[component_key] = diffusers_component
+    diffusers_pipeline = diffusers_pipeline.__class__(**new_component_map)
 
-
-@register_node()
-class DiffusersPipelineListAdapters:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-            }
-        }
-
-    RETURN_TYPES = ()
-    FUNCTION = "list_adapters"
-
-    OUTPUT_NODE = True
-
-    CATEGORY = "playground/tool"
-
-    def list_adapters(self, diffusers_pipeline):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        return {"ui": {"components_map": [json.dumps(diffusers_pipeline.get_list_adapters(), indent=4)]}}
+    return (diffusers_pipeline,)
 
 
-@register_node()
-class DiffusersPipelineOptimization:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "enable_vae_slicing": ("BOOLEAN", {"default": True}),
-                "enable_vae_tiling": ("BOOLEAN", {"default": False}),
-                "enable_model_cpu_offload": ("BOOLEAN", {"default": False}),
-                "enable_sequential_cpu_offload": ("BOOLEAN", {"default": False}),
-                "enable_xformers_memory_efficient_attention": (
-                    "BOOLEAN",
-                    {"default": True},
-                ),
-            }
-        }
-
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "optimization"
-
-    CATEGORY = "playground/tool"
-
-    def optimization(
-        self,
-        diffusers_pipeline,
-        enable_vae_slicing,
-        enable_vae_tiling,
-        enable_model_cpu_offload,
-        enable_sequential_cpu_offload,
-        enable_xformers_memory_efficient_attention,
-    ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        if enable_vae_slicing:
-            diffusers_pipeline.enable_vae_slicing()
-
-        if enable_vae_tiling:
-            diffusers_pipeline.enable_vae_tiling()
-
-        if enable_model_cpu_offload:
-            pipeline_comfy_model_patcher_wrapper.enable_sequential_cpu_offload = True
-            diffusers_pipeline.enable_model_cpu_offload()
-
-        if enable_sequential_cpu_offload:
-            pipeline_comfy_model_patcher_wrapper.enable_sequential_cpu_offload = True
-            diffusers_pipeline.enable_sequential_cpu_offload()
-
-        if enable_xformers_memory_efficient_attention and comfy.model_management.xformers_enabled():
-            diffusers_pipeline.enable_xformers_memory_efficient_attention()
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+@register_node(identifier="DiffusersPipelineComponentGet", category="tool")
+def get_component(
+    diffusers_pipeline: DiffusersPipelineType, component_key: StringType = ""
+) -> tuple[DiffusersComponentType]:
+    return (diffusers_pipeline.components.get(component_key),)
 
 
-@register_node()
-class DiffusersLoadLora:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "lora_name": (folder_paths.get_filename_list("loras"),),
-            }
-        }
+@register_node(identifier="DiffusersPipelineComponentShow", category="tool")
+def show_component(diffusers_pipeline: DiffusersPipelineType) -> tuple[StringType]:
+    components_map = {}
+    for k, v in diffusers_pipeline.components.items():
+        components_map[k] = str(type(v))
 
-    RETURN_TYPES = ("DIFFUSERS_LORA",)
-    FUNCTION = "load_lora"
-
-    CATEGORY = "playground/loaders"
-
-    def load_lora(self, lora_name):
-        lora_path = folder_paths.get_full_path("loras", lora_name)
-        lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
-        return (lora,)
+    return (json.dumps(components_map, indent=4),)
 
 
-@register_node()
-class DiffusersPipelineLoadLoraWeights:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "diffusers_lora": ("DIFFUSERS_LORA",),
-            },
-            "optional": {
-                "adapter_name": ("STRING", {"default": ""}),
-            },
-        }
-
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "load_lora_weights"
-
-    CATEGORY = "playground/tool"
-
-    def load_lora_weights(self, diffusers_pipeline, diffusers_lora, adapter_name):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
-        diffusers_lora = copy.copy(diffusers_lora)
-        adapter_name = adapter_name if adapter_name != None and len(adapter_name.strip()) > 0 else None
-
-        diffusers_pipeline.load_lora_weights(diffusers_lora, adapter_name=adapter_name)
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+@register_node(identifier="DiffusersPipelineListAdapters", category="tool")
+def list_adapters(diffusers_pipeline: DiffusersPipelineType) -> tuple[StringType]:
+    return (json.dumps(diffusers_pipeline.get_list_adapters(), indent=4),)
 
 
-@register_node()
-class DiffusersPipelineLoadIPAdapter:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-            },
-            "optional": {
-                "ip_adapter_name": (get_diffusers_ip_adapter_paths(),),
-                "model_id": ("STRING", {"default": ""}),
-                "subfolder": ("STRING", {"default": ""}),
-                "weight_name": ("STRING", {"default": ""}),
-            },
-        }
+@register_node(identifier="DiffusersLoadLora", category="loaders")
+def load_lora(
+    lora_name: Annotated[str, ComboWidget(choices=lambda: folder_paths.get_filename_list("loras"))],
+) -> tuple[DiffusersLoRAType]:
+    lora_path = folder_paths.get_full_path("loras", lora_name)
+    lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
 
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "load_ip_adapter"
-
-    CATEGORY = "playground/tool"
-
-    def load_ip_adapter(
-        self,
-        diffusers_pipeline,
-        ip_adapter_name=None,
-        model_id=None,
-        subfolder=None,
-        weight_name=None,
-    ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
-
-        pretrained_model_name_or_path: str = model_id
-        pretrained_model_full_path = model_id
-        if pretrained_model_name_or_path == None or len(pretrained_model_name_or_path.strip()) == 0:
-            pretrained_model_full_path = find_full_diffusers_folder_path(ip_adapter_name)
-            pretrained_model_name_or_path = os.path.dirname(pretrained_model_full_path)
-            weight_name = os.path.basename(pretrained_model_full_path)
-            subfolder = ""
-
-        diffusers_pipeline.load_ip_adapter(pretrained_model_name_or_path, weight_name=weight_name, subfolder=subfolder)
-
-        return (pipeline_comfy_model_patcher_wrapper,)
+    return (lora,)
 
 
-@register_node()
-class DiffusersPipelineSetIPAdapterScale:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "diffusers_pipeline": ("DIFFUSERS_PIPELINE",),
-                "ip_adapter_scale": (
-                    "FLOAT",
-                    {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01},
-                ),
-            }
-        }
+@register_node(identifier="DiffusersPipelineLoadLoraWeights", category="tool")
+def load_lora_weights(
+    diffusers_pipeline: DiffusersPipelineType, diffusers_lora: DiffusersLoRAType, adapter_name: StringType = ""
+) -> tuple[DiffusersPipelineType]:
+    diffusers_lora = copy.copy(diffusers_lora)
+    adapter_name = adapter_name if adapter_name is not None and len(adapter_name.strip()) > 0 else None
 
-    RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
-    FUNCTION = "set_ip_adapter_scale"
+    diffusers_pipeline.load_lora_weights(diffusers_lora, adapter_name=adapter_name)
 
-    CATEGORY = "playground/tool"
+    return (diffusers_pipeline,)
 
-    def set_ip_adapter_scale(
-        self,
-        diffusers_pipeline,
-        ip_adapter_scale,
-    ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: StableDiffusionPipeline = pipeline_comfy_model_patcher_wrapper.model
 
-        diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
+@register_node(identifier="DiffusersPipelineLoadIPAdapter", category="tool")
+def load_ip_adapter(
+    diffusers_pipeline: DiffusersPipelineType,
+    ip_adapter_name: Annotated[str, ComboWidget(choices=lambda: get_diffusers_ip_adapter_paths())],
+    model_id: StringType = "",
+    subfolder: StringType = "",
+    weight_name: StringType = "",
+) -> tuple[DiffusersPipelineType]:
+    pretrained_model_name_or_path: str = model_id
+    pretrained_model_full_path = model_id
+    if pretrained_model_name_or_path is None or len(pretrained_model_name_or_path.strip()) == 0:
+        pretrained_model_full_path = find_full_diffusers_folder_path(ip_adapter_name)
+        pretrained_model_name_or_path = os.path.dirname(pretrained_model_full_path)
+        weight_name = os.path.basename(pretrained_model_full_path)
+        subfolder = ""
 
-        return (pipeline_comfy_model_patcher_wrapper,)
+    diffusers_pipeline.load_ip_adapter(pretrained_model_name_or_path, weight_name=weight_name, subfolder=subfolder)
+
+    return (diffusers_pipeline,)
+
+
+@register_node(identifier="DiffusersPipelineSetIPAdapterScale", category="tool")
+def set_ip_adapter_scale(
+    diffusers_pipeline: DiffusersPipelineType,
+    ip_adapter_scale: FloatPercentageType = 0.5,
+) -> tuple[DiffusersPipelineType]:
+    diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
+
+    return (diffusers_pipeline,)

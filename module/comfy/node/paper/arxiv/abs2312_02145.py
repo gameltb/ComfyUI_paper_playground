@@ -1,13 +1,11 @@
+import comfy.utils
 import torch
 
-import comfy.model_management
-import comfy.model_patcher
-import comfy.utils
-
+from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
 from ....registry import register_node
-from ...diffusers import DiffusersPipelineType, diffusers_from_pretrained_cls, get_diffusers_folder_paths
 from ....types import ComboWidget
+from ...diffusers import DiffusersPipelineType, diffusers_from_pretrained_cls, get_diffusers_folder_paths
 
 
 def resize_max_res(img, max_edge_resolution: int):
@@ -60,37 +58,31 @@ class Abs2312_02145_DiffusersPipelineSampler:
         steps,
         max_resolution,
     ):
-        pipeline_comfy_model_patcher_wrapper = diffusers_pipeline
-        diffusers_pipeline: MarigoldPipeline = pipeline_comfy_model_patcher_wrapper.model
+        with AutoManage(diffusers_pipeline) as am:
+            image = image.permute(0, 3, 1, 2)
+            image = resize_max_res(image, max_resolution).to(device=am.get_device(), dtype=diffusers_pipeline.dtype)
 
-        comfy.model_management.load_models_gpu([pipeline_comfy_model_patcher_wrapper])
+            generator = torch.Generator(device=am.get_device())
+            generator.manual_seed(seed)
 
-        image = image.permute(0, 3, 1, 2)
-        image = resize_max_res(image, max_resolution).to(
-            device=diffusers_pipeline.device, dtype=diffusers_pipeline.dtype
-        )
+            pbar = comfy.utils.ProgressBar(steps)
 
-        generator = torch.Generator(device=diffusers_pipeline.device)
-        generator.manual_seed(seed)
+            def callback_on_step_end(i, t, callback_kwargs):
+                pbar.update(i)
+                return {}
 
-        pbar = comfy.utils.ProgressBar(steps)
+            # Predict depth
+            depth_pred = diffusers_pipeline.single_infer(
+                rgb_in=image, num_inference_steps=steps, show_pbar=True, generator=generator
+            )
 
-        def callback_on_step_end(i, t, callback_kwargs):
-            pbar.update(i)
-            return {}
+            # ----------------- Post processing -----------------
+            # Scale prediction to [0, 1]
+            min_d = torch.min(depth_pred)
+            max_d = torch.max(depth_pred)
+            depth_pred = (depth_pred - min_d) / (max_d - min_d)
 
-        # Predict depth
-        depth_pred = diffusers_pipeline.single_infer(
-            rgb_in=image, num_inference_steps=steps, show_pbar=True, generator=generator
-        )
-
-        # ----------------- Post processing -----------------
-        # Scale prediction to [0, 1]
-        min_d = torch.min(depth_pred)
-        max_d = torch.max(depth_pred)
-        depth_pred = (depth_pred - min_d) / (max_d - min_d)
-
-        # Clip output range
-        depth_pred = depth_pred.clip(0, 1)
+            # Clip output range
+            depth_pred = depth_pred.clip(0, 1)
 
         return (depth_pred[0],)

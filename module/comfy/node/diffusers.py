@@ -142,10 +142,9 @@ def diffusers_from_single_file(
     ckpt_name: ComboWidget(choices=lambda: folder_paths.get_filename_list("checkpoints")) = None,
     single_file_config_file: ComboWidget(choices=SINGLE_FILE_CONFIG_FILES) = None,
 ) -> tuple[DiffusersPipelineType]:
-    pipeline_cls: StableDiffusionPipeline = pipeline_type
     ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
 
-    pipeline = pipeline_cls.from_single_file(
+    pipeline = pipeline_type.from_single_file(
         ckpt_path,
         load_safety_checker=None,
         torch_dtype=comfy.model_management.unet_dtype(),
@@ -162,7 +161,9 @@ def diffusers_sampler_base(
     seed: IntSeedType,
     steps: IntStepsType = 20,
     cfg: FloatCFGType = 8.0,
-    scheduler: ComboWidget(choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT") = None,
+    scheduler: ComboWidget(
+        choices=DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="PIPELINE_DEFAULT"
+    ) = "PIPELINE_DEFAULT",
     latent_image: LatentType = None,
     denoise: FloatPercentageType = 1.0,
     positive_prompt: StringMultilineType = "",
@@ -207,7 +208,7 @@ def diffusers_component_from_pretrained(
     component_type: Annotated[
         type[DiffusersComponentType],
         ComboWidget(choices=DIFFUSERS_MODEL_CLASS_MAP | DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="AUTO"),
-    ],
+    ] = "AUTO",
     local_files_only: BoolType = True,
     directory: Annotated[str, ComboWidget(choices=lambda: get_diffusers_component_folder_paths())] = "",
     model_id: StringType = "",
@@ -221,7 +222,10 @@ def diffusers_component_from_pretrained(
         subfolder = None
 
     if component_type is None:
-        component_type = diffusers.ModelMixin
+        config_path = os.path.join(pretrained_model_name_or_path, "config.json")
+        with open(config_path, "r") as f:
+            pipeline_class_name = json.load(f)["_class_name"]
+        component_type = getattr(diffusers, pipeline_class_name)
 
     component = component_type.from_pretrained(
         pretrained_model_name_or_path=pretrained_model_name_or_path,

@@ -56,6 +56,7 @@ def example(
         typing.Optional[type], ComboWidget(choices=lambda: {"int": int}, ext_none_choice="none")
     ] = None,  # you can set an extra None option name, which is converted to None when passed in.
 ) -> tuple[ExampleType,SimpleType,]:  # return type
+    """example node description."""
     # do what you want.
     pass
 ```
@@ -101,6 +102,11 @@ pip install ./diff-gaussian-rasterization
 ```
 
 Put model.safetensors in https://huggingface.co/ashawkey/LGM to `ComfyUI/models/playground/paper/arxiv/abs2402_05054`
+
+## [PeRFlow: Piecewise Rectified Flow as Universal Plug-and-Play Accelerator](https://github.com/magic-research/piecewise-rectified-flow)
+
+Put https://huggingface.co/hansyan/perflow-sd15-delta-weights to `ComfyUI/models/diffusers/perflow-sd15-delta-weights`.  
+Use `Apply Piecewise Rectified Flow` node.
 
 # github
 

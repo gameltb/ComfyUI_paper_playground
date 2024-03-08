@@ -162,6 +162,12 @@ ID : paper_playground_0_joytag_predict
 CATEGORY : playground/github/joytag  
 DESCRIPTION : No description.  
 
+## Apply Piecewise Rectified Flow
+
+ID : paper_playground_0_apply_piecewise_rectified_flow  
+CATEGORY : playground/github/piecewise_rectified_flow  
+DESCRIPTION : component from hansyan/perflow-sd15-delta-weights, variant="v0-1".  
+
 ## Load Bria Rmbg
 
 ID : paper_playground_0_load_Bria_RMBG  

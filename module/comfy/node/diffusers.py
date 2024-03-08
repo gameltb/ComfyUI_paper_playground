@@ -213,6 +213,7 @@ def diffusers_component_from_pretrained(
     directory: Annotated[str, ComboWidget(choices=lambda: get_diffusers_component_folder_paths())] = "",
     model_id: StringType = "",
     subfolder: StringType = "",
+    variant: StringType = "",
 ) -> tuple[DiffusersComponentType]:
     pretrained_model_name_or_path: str = model_id
     if pretrained_model_name_or_path is None or len(pretrained_model_name_or_path.strip()) == 0:
@@ -221,15 +222,19 @@ def diffusers_component_from_pretrained(
     if subfolder is not None and len(subfolder.strip()) == 0:
         subfolder = None
 
+    if variant is not None and len(variant.strip()) == 0:
+        variant = None
+
     if component_type is None:
         config_path = os.path.join(pretrained_model_name_or_path, "config.json")
         with open(config_path, "r") as f:
             pipeline_class_name = json.load(f)["_class_name"]
-        component_type = getattr(diffusers, pipeline_class_name)
+        component_type: diffusers.ModelMixin = getattr(diffusers, pipeline_class_name)
 
     component = component_type.from_pretrained(
         pretrained_model_name_or_path=pretrained_model_name_or_path,
         subfolder=subfolder,
+        variant=variant,
         torch_dtype=comfy.model_management.unet_dtype(),
         local_files_only=local_files_only,
     ).to(device=comfy.model_management.unet_offload_device())

@@ -5,6 +5,9 @@ from typing import Any, Optional
 import diffusers
 import psutil
 import torch
+from accelerate.hooks import ModelHook, add_hook_to_module
+from accelerate.utils import send_to_device
+import accelerate
 
 resources_device = torch.device
 
@@ -36,16 +39,39 @@ class AutoManage:
         obj.inference_memory_size = inference_memory_size
         self.user = obj
 
-    def __enter__(self):
+    def load(self):
         self.user.keep_in_load = True
         self.user.load()
+
+    def offload(self):
+        self.user.keep_in_load = False
+
+    def __enter__(self):
+        self.load()
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any):
-        self.user.keep_in_load = False
+        self.offload()
 
     def get_device(self):
         return self.user.device_strategy.get_runtime_device()
+
+
+class AutoManageHook(ModelHook):
+    def __init__(self, am: AutoManage):
+        self.am = am
+
+    @property
+    def execution_device(self):
+        return self.am.get_device()
+
+    def pre_forward(self, module, *args, **kwargs):
+        self.am.load()
+        return send_to_device(args, self.am.get_device()), send_to_device(kwargs, self.am.get_device())
+
+    def post_forward(self, module, output):
+        self.am.offload()
+        return output
 
 
 class DeviceStrategy:
@@ -146,28 +172,27 @@ class DiffusersPipelineWrapper(ResourcesUser):
         super().__init__()
         self.pipeline = pipeline
         self.device_strategy = device_strategy
+        self.all_module_hooks_map = {}
 
     @property
     def manage_object(self):
         return self.pipeline
 
     def load(self, device: Optional[resources_device] = None):
-        origin_keep_in_load = self.keep_in_load
-        self.keep_in_load = True
-        self.device_strategy.free_runtime_device(self.pipeline_size(self.pipeline) + self.inference_memory_size)
-        self.keep_in_load = origin_keep_in_load
+        all_model_components = {k: v for k, v in self.pipeline.components.items() if isinstance(v, torch.nn.Module)}
 
-        if self.pipeline.model_cpu_offload_seq is not None:
-            if not hasattr(self.pipeline, "_all_hooks") or len(self.pipeline._all_hooks) == 0:
-                self.pipeline.enable_model_cpu_offload(device=self.device_strategy.get_runtime_device())
-        else:
-            self.pipeline.to(self.device_strategy.get_runtime_device())
+        for name, model in all_model_components.items():
+            if name in self.all_module_hooks_map:
+                continue
+            if not isinstance(model, torch.nn.Module):
+                continue
+
+            hook = AutoManageHook(AutoManage(model))
+            add_hook_to_module(model, hook, append=True)
+            self.all_module_hooks_map[name] = hook
 
     def offload(self, device: Optional[resources_device] = None):
-        if self.pipeline.model_cpu_offload_seq is not None:
-            self.pipeline.maybe_free_model_hooks()
-        else:
-            self.pipeline.to(self.device_strategy.get_offload_device())
+        pass
 
     @staticmethod
     def pipeline_size(pipeline: diffusers.DiffusionPipeline):

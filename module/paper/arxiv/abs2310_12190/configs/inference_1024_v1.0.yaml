@@ -82,12 +82,14 @@ model:
       params:
         freeze: true
         layer: "penultimate"
+        version: 
 
     img_cond_stage_config:
       target: lvdm.modules.encoders.condition.FrozenOpenCLIPImageEmbedderV2
       params:
         freeze: true
-    
+        version: 
+
     image_proj_stage_config:
       target: lvdm.modules.encoders.resampler.Resampler
       params:

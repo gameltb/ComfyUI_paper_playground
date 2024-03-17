@@ -16,13 +16,12 @@ mainlogger = logging.getLogger('mainlogger')
 import torch
 import torch.nn as nn
 from torchvision.utils import make_grid
-import pytorch_lightning as pl
-from utils.utils import instantiate_from_config
-from lvdm.ema import LitEma
-from lvdm.distributions import DiagonalGaussianDistribution
-from lvdm.models.utils_diffusion import make_beta_schedule, rescale_zero_terminal_snr
-from lvdm.basics import disabled_train
-from lvdm.common import (
+from ...utils.utils import instantiate_from_config
+from ..ema import LitEma
+from ..distributions import DiagonalGaussianDistribution
+from ..models.utils_diffusion import make_beta_schedule, rescale_zero_terminal_snr
+from ..basics import disabled_train
+from ..common import (
     extract_into_tensor,
     noise_like,
     exists,
@@ -33,7 +32,7 @@ __conditioning_keys__ = {'concat': 'c_concat',
                          'crossattn': 'c_crossattn',
                          'adm': 'y'}
 
-class DDPM(pl.LightningModule):
+class DDPM(nn.Module):
     # classic DDPM with Gaussian diffusion, in image space
     def __init__(self,
                  unet_config,
@@ -690,7 +689,7 @@ class LatentVisualDiffusion(LatentDiffusion):
                 param.requires_grad = False
 
 
-class DiffusionWrapper(pl.LightningModule):
+class DiffusionWrapper(nn.Module):
     def __init__(self, diff_model_config, conditioning_key):
         super().__init__()
         self.diffusion_model = instantiate_from_config(diff_model_config)

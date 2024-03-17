@@ -3,7 +3,12 @@ from typing import Annotated
 
 from ...core.runtime_resource_management import get_management, resources_device
 from ..registry import register_node
-from ..types import ReturnType, StringType, new_widget
+from ..types import ReturnType, StringType, StringMultilineType, new_widget
+
+
+@register_node(category="utils")
+def string_box(string: StringMultilineType) -> tuple[StringType]:
+    return (string,)
 
 
 @register_node(identifier="ShowString", category="utils", output=True)

@@ -72,6 +72,12 @@ ID : paper_playground_0_DiffusersPipelineSetIPAdapterScale
 CATEGORY : playground/tool  
 DESCRIPTION : No description.  
 
+## String Box
+
+ID : paper_playground_0_string_box  
+CATEGORY : playground/utils  
+DESCRIPTION : No description.  
+
 ## Show String
 
 ID : paper_playground_0_ShowString  
@@ -148,6 +154,18 @@ DESCRIPTION : No description.
 
 ID : paper_playground_0_run_lgm  
 CATEGORY : playground/arxiv/abs2402_05054  
+DESCRIPTION : No description.  
+
+## Load Dynami Crafter
+
+ID : paper_playground_0_load_dynami_crafter  
+CATEGORY : playground/arxiv/abs2310_12190  
+DESCRIPTION : No description.  
+
+## Run Dynami Crafter
+
+ID : paper_playground_0_run_dynami_crafter  
+CATEGORY : playground/arxiv/abs2310_12190  
 DESCRIPTION : No description.  
 
 ## Load Joytag

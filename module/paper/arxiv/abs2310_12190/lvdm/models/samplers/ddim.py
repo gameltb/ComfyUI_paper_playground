@@ -1,10 +1,9 @@
 import numpy as np
-from tqdm import tqdm
 import torch
-from lvdm.models.utils_diffusion import make_ddim_sampling_parameters, make_ddim_timesteps, rescale_noise_cfg
-from lvdm.common import noise_like
-from lvdm.common import extract_into_tensor
-import copy
+from tqdm import tqdm
+
+from ...common import extract_into_tensor, noise_like
+from ..utils_diffusion import make_ddim_sampling_parameters, make_ddim_timesteps, rescale_noise_cfg
 
 
 class DDIMSampler(object):
@@ -26,7 +25,7 @@ class DDIMSampler(object):
                                                   num_ddpm_timesteps=self.ddpm_num_timesteps,verbose=verbose)
         alphas_cumprod = self.model.alphas_cumprod
         assert alphas_cumprod.shape[0] == self.ddpm_num_timesteps, 'alphas have to be defined for each timestep'
-        to_torch = lambda x: x.clone().detach().to(torch.float32).to(self.model.device)
+        to_torch = lambda x: x.clone().detach().to(torch.float32).to(self.model.alphas_cumprod.device)
 
         if self.model.use_dynamic_rescale:
             self.ddim_scale_arr = self.model.scale_arr[self.ddim_timesteps]

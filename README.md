@@ -112,6 +112,10 @@ Put model.safetensors in https://huggingface.co/ashawkey/LGM to `ComfyUI/models/
 Put https://huggingface.co/hansyan/perflow-sd15-delta-weights to `ComfyUI/models/diffusers/perflow-sd15-delta-weights`.  
 Use `Apply Piecewise Rectified Flow` node.
 
+## [DynamiCrafter: Animating Open-domain Images with Video Diffusion Priors](https://github.com/Doubiiu/DynamiCrafter)
+
+Put https://huggingface.co/Doubiiu/DynamiCrafter_512_Interp/blob/main/model.ckpt to `ComfyUI/models/playground/paper/arxiv/abs2310_12190/`.
+
 # github
 
 ## [JoyTag](https://github.com/fpgaminer/joytag)

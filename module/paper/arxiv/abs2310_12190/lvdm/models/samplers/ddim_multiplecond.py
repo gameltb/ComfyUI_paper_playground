@@ -1,10 +1,9 @@
 import numpy as np
 from tqdm import tqdm
 import torch
-from lvdm.models.utils_diffusion import make_ddim_sampling_parameters, make_ddim_timesteps, rescale_noise_cfg
-from lvdm.common import noise_like
-from lvdm.common import extract_into_tensor
-import copy
+from ..utils_diffusion import make_ddim_sampling_parameters, make_ddim_timesteps, rescale_noise_cfg
+from ...common import noise_like
+from ...common import extract_into_tensor
 
 
 class DDIMSampler(object):

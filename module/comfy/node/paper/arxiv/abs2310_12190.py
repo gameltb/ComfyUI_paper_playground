@@ -271,7 +271,6 @@ def load_dynami_crafter(
 @register_node(category="arxiv/abs2310_12190")
 def run_dynami_crafter(
     dynami_crafter_pipeline: DynamiCrafterPipelineType,
-    interp: BoolType,
     seed: IntSeedType,
     video_frames: IntType = 16,
     ddim_steps: IntStepsType = 50,
@@ -287,9 +286,11 @@ def run_dynami_crafter(
     image_end: Annotated[ImageType, new_widget(ImageType, is_required=False)] = None,
     prompt: StringMultilineType = "",
 ) -> tuple[ImageType]:
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     videos = dynami_crafter_pipeline.__call__(
         image_start[0].permute(2, 0, 1),
-        interp,
+        image_end is not None,
         prompt,
         video_frames,
         None,
@@ -303,6 +304,6 @@ def run_dynami_crafter(
         loop=loop,
         timestep_spacing=timestep_spacing,
         guidance_rescale=guidance_rescale,
-        input_image_end=image_end[0].permute(2, 0, 1),
+        input_image_end=image_end[0].permute(2, 0, 1) if image_end is not None else None,
     )
     return (videos[0][0].permute(1, 2, 3, 0),)

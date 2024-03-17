@@ -60,7 +60,7 @@ def gen_simple_new_type(
 
 def new_widget(tp, is_required: bool = True, is_forceInput: bool = True, **kwargs):
     return find_comfy_widget_type_annotation(tp).model_copy(
-        update={"is_required": is_required, "forceInput": is_forceInput, **kwargs}
+        update={"required": is_required, "forceInput": is_forceInput, **kwargs}
     )
 
 

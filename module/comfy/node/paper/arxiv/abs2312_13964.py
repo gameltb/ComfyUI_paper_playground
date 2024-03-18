@@ -201,7 +201,7 @@ class Abs2312_13964_DiffusersPipelineSampler:
         pbar = comfy.utils.ProgressBar(steps)
 
         def callback_on_step_end(i, t, callback_kwargs):
-            pbar.update(i)
+            pbar.update_absolute(i)
             return {}
 
         with AutoManage(diffusers_pipeline) as am:

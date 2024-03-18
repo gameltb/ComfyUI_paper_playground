@@ -116,6 +116,10 @@ Use `Apply Piecewise Rectified Flow` node.
 
 Put https://huggingface.co/Doubiiu/DynamiCrafter_512_Interp/blob/main/model.ckpt to `ComfyUI/models/playground/paper/arxiv/abs2310_12190/`.
 
+## [OMS-Diffusion: One More Step Diffusion is All You Need for Virtual Try-on](https://github.com/ShineChen1024/oms-Diffusion)
+
+Put model in https://huggingface.co/shinehugging/oms-diffusion to `ComfyUI/models/playground/paper/arxiv/abs2403_01779/`.
+
 # github
 
 ## [JoyTag](https://github.com/fpgaminer/joytag)

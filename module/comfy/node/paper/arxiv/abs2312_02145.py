@@ -68,7 +68,7 @@ class Abs2312_02145_DiffusersPipelineSampler:
             pbar = comfy.utils.ProgressBar(steps)
 
             def callback_on_step_end(i, t, callback_kwargs):
-                pbar.update(i)
+                pbar.update_absolute(i)
                 return {}
 
             # Predict depth

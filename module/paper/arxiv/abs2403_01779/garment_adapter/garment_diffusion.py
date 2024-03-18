@@ -1,8 +1,8 @@
 import copy
 import torch
 from safetensors import safe_open
-from garment_seg.process import load_seg_model, generate_mask
-from utils.utils import is_torch2_available, prepare_image, prepare_mask
+from ..garment_seg.process import load_seg_model, generate_mask
+from ..utils.utils import is_torch2_available, prepare_image, prepare_mask
 from diffusers import UNet2DConditionModel
 
 if is_torch2_available():

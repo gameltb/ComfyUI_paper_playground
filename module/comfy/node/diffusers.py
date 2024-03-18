@@ -181,7 +181,7 @@ def diffusers_sampler_base(
     pbar = comfy.utils.ProgressBar(steps)
 
     def callback_on_step_end(self, i, t, callback_kwargs):
-        pbar.update(i)
+        pbar.update_absolute(i)
         return {}
 
     with AutoManage(diffusers_pipeline) as am:

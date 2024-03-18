@@ -168,6 +168,18 @@ ID : paper_playground_0_run_dynami_crafter
 CATEGORY : playground/arxiv/abs2310_12190  
 DESCRIPTION : No description.  
 
+## Load Oms Diffusion
+
+ID : paper_playground_0_load_oms_diffusion  
+CATEGORY : playground/arxiv/abs2403_01779  
+DESCRIPTION : No description.  
+
+## Run Oms Diffusers
+
+ID : paper_playground_0_run_oms_diffusers  
+CATEGORY : playground/arxiv/abs2403_01779  
+DESCRIPTION : No description.  
+
 ## Load Joytag
 
 ID : paper_playground_0_load_joytag  

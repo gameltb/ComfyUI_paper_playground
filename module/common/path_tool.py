@@ -2,6 +2,7 @@ import os
 
 import folder_paths
 
+HUGGINGFACE_MODEL_PATH = os.path.join(folder_paths.models_dir, "huggingface")
 PLAYGROUND_MODEL_PATH = os.path.join(folder_paths.models_dir, "playground")
 REPO_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 
@@ -48,3 +49,7 @@ def get_output_path(save_path):
 
     os.makedirs(folder_path, exist_ok=True)
     return os.path.join(folder_path, file_name)
+
+
+def get_local_huggingface_path(repo_id):
+    return os.path.join(HUGGINGFACE_MODEL_PATH, repo_id)

@@ -5,16 +5,12 @@ import torch.amp.autocast_mode
 import torchvision.transforms.functional as TVF
 from PIL import Image
 
-from .....common import path_tool
+from .....common import file_get_tool, path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.github.joytag.Models import VisionModel
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
 from ....types import FloatPercentageType, ImageType, StringType, gen_simple_new_type
-
-MODEL_PATH = path_tool.get_model_dir(__name__, "")
-
-TOP_TAGS_CONFIG_PATH = os.path.join(MODEL_PATH, "top_tags.txt")
 
 
 class JoytagPipeline(PlaygroundPipeline):
@@ -36,7 +32,7 @@ class JoytagPipeline(PlaygroundPipeline):
                 "image": image_tensor.unsqueeze(0).to(device),
             }
 
-            with torch.amp.autocast_mode.autocast(device, enabled=True):
+            with torch.amp.autocast_mode.autocast(device.type, enabled=True):
                 preds = self.model(batch)
                 tag_preds = preds["tags"].sigmoid().cpu()
 
@@ -77,10 +73,20 @@ def prepare_image(image: Image.Image, target_size: int) -> torch.Tensor:
 
 @register_node(category="github/joytag")
 def load_joytag() -> tuple[JoytagPipelineType]:
-    with open(TOP_TAGS_CONFIG_PATH, "r") as f:
+    model_path = file_get_tool.find_or_download_huggingface_repo(
+        [
+            file_get_tool.FileSource(
+                loacal_folder=path_tool.get_model_dir(__name__, ""),
+            ),
+            file_get_tool.FileSourceHuggingface(repo_id="fancyfeast/joytag"),
+        ]
+    )
+
+    top_tags_config_path = os.path.join(model_path, "top_tags.txt")
+    with open(top_tags_config_path, "r") as f:
         top_tags = [line.strip() for line in f.readlines() if line.strip()]
 
-    model = VisionModel.load_model(MODEL_PATH)
+    model = VisionModel.load_model(model_path)
     model.eval()
 
     return (JoytagPipeline(top_tags=top_tags, model=model),)

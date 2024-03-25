@@ -14,8 +14,6 @@ def get_model_dir(self_name, key=""):
         sub_key = self_name.split("module.")[-1]
     sub_path = os.path.join(*sub_key.split("."), key)
     full_path = os.path.join(PLAYGROUND_MODEL_PATH, sub_path)
-    if not os.path.exists(full_path):
-        os.makedirs(full_path, exist_ok=True)
     return full_path
 
 
@@ -23,8 +21,6 @@ def get_model_filename_list(self_name, key=""):
     sub_key = self_name.split("node.")[-1]
     sub_path = os.path.join(*sub_key.split("."), key)
     full_path = os.path.join(PLAYGROUND_MODEL_PATH, sub_path)
-    if not os.path.exists(full_path):
-        os.makedirs(full_path, exist_ok=True)
     return os.listdir(full_path)
 
 

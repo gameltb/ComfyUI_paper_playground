@@ -18,10 +18,9 @@ for node_type in ["arxiv", "github"]:
             base_name, ext = os.path.splitext(file_name)
             if ext == ".py":
                 importlib.import_module(f".node.paper.{node_type}.{base_name}", package=__package__)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
-            print(f"Cannot import {file_name} module :", e)
 try:
     from .node import rmbg
-except:
-    pass
+except Exception:
+    traceback.print_exc()

@@ -5,22 +5,29 @@ import torch
 import torch.amp.autocast_mode
 import torch.nn.functional as F
 
+from ...common import file_get_tool, import_tool
 from ...core.runtime_resource_management import AutoManage
 from ..registry import register_node
 from ..types import ImageType, MaskType, gen_simple_new_type
-from .briarmbg.briarmbg import BriaRMBG
-from .briarmbg.utilities import preprocess_image
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "briarmbg", "pytorch_model.bin")
+REPO_PATH = file_get_tool.find_or_download_huggingface_repo(
+    [
+        file_get_tool.FileSourceHuggingface(repo_id="briaai/RMBG-1.4"),
+    ]
+)
+
+briarmbg = import_tool.module_from_file(os.path.join(REPO_PATH, "briarmbg.py"))
+utilities = import_tool.module_from_file(os.path.join(REPO_PATH, "utilities.py"))
 
 
-BriaRMBGType = gen_simple_new_type(BriaRMBG, "BRIA_RMBG")
+BriaRMBGType = gen_simple_new_type(briarmbg.BriaRMBG, "BRIA_RMBG")
 
 
 @register_node(category="utils/rmbg")
 def load_Bria_RMBG() -> tuple[BriaRMBGType]:
-    net = BriaRMBG()
-    ckpt = comfy.utils.load_torch_file(MODEL_PATH, safe_load=True)
+    model_path = os.path.join(REPO_PATH, "pytorch_model.bin")
+    net = briarmbg.BriaRMBG()
+    ckpt = comfy.utils.load_torch_file(model_path, safe_load=True)
     net.load_state_dict(ckpt)
     net.eval()
 
@@ -39,7 +46,7 @@ def Bria_RMBG_predict(
         # prepare input
         model_input_size = [1024, 1024]
         orig_im_size = orig_im.shape[0:2]
-        image = preprocess_image(orig_im, model_input_size).to(device)
+        image = utilities.preprocess_image(orig_im, model_input_size).to(device)
 
         # inference
         result = BriaRMBG(image)

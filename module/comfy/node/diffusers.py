@@ -24,7 +24,7 @@ from ..types import (
     LatentType,
     StringMultilineType,
     StringType,
-    gen_simple_new_type,
+    gen_widget,
 )
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
@@ -93,11 +93,11 @@ def get_diffusers_ip_adapter_paths():
     return paths
 
 
-DiffusersPipelineType = gen_simple_new_type(DiffusionPipeline, "DIFFUSERS_PIPELINE")
-DiffusersComponentType = gen_simple_new_type(
-    Union[diffusers.ModelMixin, diffusers.SchedulerMixin], "DIFFUSERS_COMPONENT"
-)
-DiffusersLoRAType = gen_simple_new_type(dict[str, torch.Tensor], "DIFFUSERS_LORA")
+DiffusersPipelineType = Annotated[DiffusionPipeline, gen_widget("DIFFUSERS_PIPELINE")]
+DiffusersComponentType = Annotated[
+    Union[diffusers.ModelMixin, diffusers.SchedulerMixin], gen_widget("DIFFUSERS_COMPONENT")
+]
+DiffusersLoRAType = Annotated[dict[str, torch.Tensor], gen_widget("DIFFUSERS_LORA")]
 
 
 @register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")

@@ -1,15 +1,15 @@
-import os
+from typing import Annotated
 
 import cv2
 import numpy as np
 import torch
 from transformers import VitMatteForImageMatting, VitMatteImageProcessor
 
-from .....common import path_tool
+from .....common import file_get_tool
 from .....core.runtime_resource_management import AutoManage
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
-from ....types import ImageType, IntType, MaskType, gen_simple_new_type
+from ....types import ImageType, IntType, MaskType, gen_widget
 
 
 def generate_trimap(mask, erode_kernel_size=10, dilate_kernel_size=10):
@@ -43,19 +43,19 @@ class VitMattePipeline(PlaygroundPipeline):
         return alphas
 
 
-VitMattePipelineType = gen_simple_new_type(VitMattePipeline, "VIT_MATTE_PIPELINE")
+VitMattePipelineType = Annotated[VitMattePipeline, gen_widget("VIT_MATTE_PIPELINE")]
 
 
 @register_node(category="arxiv/abs2305_15272")
 def load_vit_matte_pipeline() -> tuple[VitMattePipelineType]:
-    repo_id = "hustvl/vitmatte-small-composition-1k"
-    local_path = path_tool.get_local_huggingface_path(repo_id)
-    if os.path.exists(local_path):
-        processor = VitMatteImageProcessor.from_pretrained(local_path, local_files_only=True)
-        model = VitMatteForImageMatting.from_pretrained(local_path, local_files_only=True)
-    else:
-        processor = VitMatteImageProcessor.from_pretrained(repo_id)
-        model = VitMatteForImageMatting.from_pretrained(repo_id)
+    local_path = file_get_tool.find_or_download_huggingface_repo(
+        [
+            file_get_tool.FileSourceHuggingface(repo_id="hustvl/vitmatte-small-composition-1k"),
+        ]
+    )
+
+    processor = VitMatteImageProcessor.from_pretrained(local_path, local_files_only=True)
+    model = VitMatteForImageMatting.from_pretrained(local_path, local_files_only=True)
 
     return (VitMattePipeline(processor, model),)
 

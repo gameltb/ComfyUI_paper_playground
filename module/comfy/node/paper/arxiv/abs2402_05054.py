@@ -7,10 +7,10 @@ from .....paper.arxiv.abs2402_05054.core.models import LGM
 from .....paper.arxiv.abs2402_05054.core.options import config_defaults
 from .....pipelines.abs2402_05054 import LGMPipeline
 from ....registry import register_node
-from ....types import ComboWidget, ImageType, gen_simple_new_type
+from ....types import ComboWidget, ImageType, gen_widget
 from ...plyfile import PlyDataType
 
-LGMPipelineType = gen_simple_new_type(LGMPipeline, "LGM_PIPELINE")
+LGMPipelineType = Annotated[LGMPipeline, gen_widget("LGM_PIPELINE")]
 
 
 @register_node(category="arxiv/abs2402_05054")

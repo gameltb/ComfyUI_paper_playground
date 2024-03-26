@@ -1,4 +1,5 @@
 import os
+from typing import Annotated
 
 import comfy.utils
 import torch
@@ -8,7 +9,7 @@ import torch.nn.functional as F
 from ...common import file_get_tool, import_tool
 from ...core.runtime_resource_management import AutoManage
 from ..registry import register_node
-from ..types import ImageType, MaskType, gen_simple_new_type
+from ..types import ImageType, MaskType, gen_widget
 
 REPO_PATH = file_get_tool.find_or_download_huggingface_repo(
     [
@@ -20,7 +21,7 @@ briarmbg = import_tool.module_from_file(os.path.join(REPO_PATH, "briarmbg.py"))
 utilities = import_tool.module_from_file(os.path.join(REPO_PATH, "utilities.py"))
 
 
-BriaRMBGType = gen_simple_new_type(briarmbg.BriaRMBG, "BRIA_RMBG")
+BriaRMBGType = Annotated[briarmbg.BriaRMBG, gen_widget("BRIA_RMBG")]
 
 
 @register_node(category="utils/rmbg")

@@ -1,21 +1,17 @@
 import os
 from typing import Annotated
 
+import comfy.utils
 import torch
 
-import comfy.utils
-
 from .....common import path_tool
+from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
-
 from ....registry import register_node
-from ....types import ComboWidget, ImageType, gen_simple_new_type
-from .....core.runtime_resource_management import AutoManage
-from ....registry import register_node
-from ....types import ImageType, MaskType, gen_simple_new_type
+from ....types import ComboWidget, ImageType, MaskType, gen_widget
 
-EfficientSamModelType = gen_simple_new_type(EfficientSam, "EFFICIENT_SAM_MODEL")
+EfficientSamModelType = Annotated[EfficientSam, gen_widget("EFFICIENT_SAM_MODEL")]
 
 EFFICIENT_SAM_CONFIG = {
     "efficient_sam_vitt": {

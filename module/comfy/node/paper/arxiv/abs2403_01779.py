@@ -19,10 +19,10 @@ from ....types import (
     ImageType,
     IntSeedType,
     IntStepsType,
+    IntType,
     MaskType,
     StringMultilineType,
-    gen_simple_new_type,
-    IntType,
+    gen_widget,
 )
 from ...diffusers import (
     DIFFUSERS_SCHEDULER_CLASS_MAP,
@@ -159,7 +159,7 @@ class OmsDiffusionPipeline(PlaygroundPipeline):
         return images, cloth_mask_image
 
 
-OmsDiffusionPipelineType = gen_simple_new_type(OmsDiffusionPipeline, "OMS_DIFFUSION_PIPELINE")
+OmsDiffusionPipelineType = Annotated[OmsDiffusionPipeline, gen_widget("OMS_DIFFUSION_PIPELINE")]
 
 
 @register_node(category="arxiv/abs2403_01779")

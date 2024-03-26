@@ -20,22 +20,29 @@ Than import you node at [module/comfy/\_\_init\_\_.py](module/comfy/__init__.py)
 example node
 
 ```python
-import typing
 import os
+from typing import Annotated, Optional
 
 from ..registry import register_node
-from ..types import ComboWidget, gen_simple_new_type, new_widget, ComfyWidgetType
-from ..types import BoolType, StringWidget  # some base comfyui type
+from ..types import (
+    BoolType,
+    ComboWidget,
+    ComfyWidgetType,
+    StringWidget,
+    gen_widget,
+    new_widget,
+)  # some base comfyui type
 
 
 class ExampleWidget(ComfyWidgetType):
     TYPE = "EXAMPLE"  # identifier of comfyui type.
 
 
-ExampleType = typing.Annotated[bool, ExampleWidget()]  # TypeAlias , use as bool
+ExampleType = Annotated[bool, ExampleWidget()]  # TypeAlias , use as bool
 
-SimpleType = gen_simple_new_type(str, "SIMPLE")  # Simple TypeAlias without definition Widget, use as str
+SimpleType = Annotated[str, gen_widget("SIMPLE")]  # Simple TypeAlias without definition Widget, use as str
 """Simple type doc"""
+
 
 @register_node(
     identifier="node_identifier",  # identifier of node. If not provided, it will be generated from the function name.
@@ -44,22 +51,22 @@ SimpleType = gen_simple_new_type(str, "SIMPLE")  # Simple TypeAlias without defi
 )
 def example(
     widget_input1: StringWidget(),  # use widget instance as type hint , register_node will convert it to an inputType. but it is not valid for programmers.
-    input1: BoolType,  # use Annotated type , This is the recommended way.
+    input1: ExampleType,  # use Annotated type , This is the recommended way.
     input2: BoolType = True,  # you can set default value.
-    op_input1: typing.Annotated[BoolType, new_widget(BoolType, is_required=False)] = True,  # change widget property.
-    combo_input0: typing.Annotated[
+    op_input1: Annotated[BoolType, new_widget(BoolType, is_required=False)] = True,  # change widget property,
+    combo_input0: Annotated[
         str, ComboWidget(choices=["int"])
     ] = None,  # use Combo widget to select an item from the list.
-    combo_input1: typing.Annotated[
+    combo_input1: Annotated[
         type, ComboWidget(choices={"int": int})
-    ] = None,  # with dict choices Combo widget will automatically convert key to value .
-    combo_input2: typing.Annotated[
+    ] = None,  # with dict choices Combo widget will automatically convert  key to value .
+    combo_input2: Annotated[
         str, ComboWidget(choices=lambda: os.listdir("."))
     ] = None,  # with lambda Combo widget will update list when web page refresh.
-    combo_input3: typing.Annotated[
-        typing.Optional[type], ComboWidget(choices=lambda: {"int": int}, ext_none_choice="none")
+    combo_input3: Annotated[
+        Optional[type], ComboWidget(choices=lambda: {"int": int}, ext_none_choice="none")
     ] = None,  # you can set an extra None option name, which is converted to None when passed in.
-) -> tuple[ExampleType,SimpleType,]:  # return type
+) -> tuple[ExampleType, SimpleType]:  # return type
     """example node description."""
     # do what you want.
     pass

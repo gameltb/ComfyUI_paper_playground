@@ -12,14 +12,14 @@ from .....paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3
 from .....pipelines.abs2304_05690 import HybrikXPipeline
 from .....utils.json import np_dump
 from ....registry import register_node
-from ....types import ComboWidget, ImageType, StringType, gen_simple_new_type
+from ....types import ComboWidget, ImageType, StringType, gen_widget
 
 SMPLX_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs/smplx")
 SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for filename in os.listdir(SMPLX_CONFIG_PATH)}
 
 
-HybrikxPipelineType = gen_simple_new_type(HybrikXPipeline, "HYBRIKX_PIPELINE")
-HybrikxFrameType = gen_simple_new_type(dict, "HYBRIKX_FRAME")
+HybrikxPipelineType = Annotated[HybrikXPipeline, gen_widget("HYBRIKX_PIPELINE")]
+HybrikxFrameType = Annotated[dict, gen_widget("HYBRIKX_FRAME")]
 
 
 @register_node(category="arxiv/abs2304_05690")

@@ -8,6 +8,7 @@ from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
+from ....node.utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, MaskType, gen_widget
 
@@ -25,6 +26,22 @@ EFFICIENT_SAM_CONFIG = {
         "checkpoint": "weights/efficient_sam_vits.pt",
     },
 }
+
+
+def parse_annotate(annotates: ImageAnnotateType):
+    input_points = []
+    input_labels = []
+    for annotate in annotates:
+        if annotate.type == 1:
+            input_points.append(annotate.coor[0])
+            input_labels.append(2)
+            input_points.append(annotate.coor[1])
+            input_labels.append(3)
+        elif annotate.type == 3:
+            input_points.append(annotate.coor)
+            input_labels.append(1)
+
+    return input_points, input_labels
 
 
 @register_node(category="arxiv/abs2312_00863")
@@ -46,10 +63,12 @@ def load_efficient_sam(
 def run_efficient_sam(
     efficient_sam_model: EfficientSamModelType,
     image: ImageType,
+    annotate: ImageAnnotateType,
 ) -> tuple[MaskType]:
     with AutoManage(efficient_sam_model) as am:
-        input_points = torch.tensor([[[[580, 350], [650, 350]]]]).to(am.get_device())
-        input_labels = torch.tensor([[[1, 1]]]).to(am.get_device())
+        pts_sampled, pts_labels = parse_annotate(annotate)
+        input_points = torch.reshape(torch.tensor(pts_sampled), [1, 1, -1, 2]).to(am.get_device())
+        input_labels = torch.reshape(torch.tensor(pts_labels), [1, 1, -1]).to(am.get_device())
 
         predicted_logits, predicted_iou = efficient_sam_model.forward(
             image.permute(0, 3, 1, 2).to(am.get_device()),

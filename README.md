@@ -127,6 +127,9 @@ Put https://huggingface.co/Doubiiu/DynamiCrafter_512_Interp/blob/main/model.ckpt
 
 Put model in https://huggingface.co/shinehugging/oms-diffusion to `ComfyUI/models/playground/paper/arxiv/abs2403_01779/`.
 
+## [Boosting Image Matting with Pretrained Plain Vision Transformers](https://github.com/hustvl/ViTMatte)
+
+
 # github
 
 ## [JoyTag](https://github.com/fpgaminer/joytag)

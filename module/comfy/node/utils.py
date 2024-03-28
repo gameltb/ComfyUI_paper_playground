@@ -3,7 +3,7 @@ from typing import Annotated
 
 from ...core.runtime_resource_management import get_management, resources_device
 from ..registry import register_node
-from ..types import ReturnType, StringType, StringMultilineType, new_widget
+from ..types import ReturnType, StringMultilineType, StringType, new_widget
 
 
 @register_node(category="utils")

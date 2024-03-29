@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { ComfyWidgets } from "../../scripts/widgets.js";
 
 const widget_ext = {
     name: "gameltb.playground_widgets_IMAGE_ANNOTATE",
@@ -6,6 +7,7 @@ const widget_ext = {
         return {
             IMAGE_ANNOTATE(node, inputName, inputData, app) {
                 const openEditorDialog = function (node) {
+                    const image_annotate_widget = node.widgets ? node.widgets.find((widget) => widget.name === inputName) : null;
                     const image_input = node.inputs ? node.inputs.find((input) => input.name === inputData[1].image_input_name) : null;
                     const image_src_node = node.getInputNode(node.inputs.indexOf(image_input))
                     node.properties.dialogOpened = true;
@@ -75,7 +77,7 @@ const widget_ext = {
                     instance.HEIGHT = size[1];
 
                     instance.labelMaxLen = 10;
-                    instance.setData(JSON.parse(widget.value));
+                    instance.setData(JSON.parse(image_annotate_widget.value));
                     // 图片加载完成
                     instance.on("load", (src) => {
                         console.log("image loaded", src);
@@ -86,7 +88,7 @@ const widget_ext = {
                         const list = [...result];
                         list.sort((a, b) => a.index - b.index);
                         showTextEl.value = JSON.stringify(list, null, 2);
-                        widget.value = JSON.stringify(list, null, 0);
+                        image_annotate_widget.value = JSON.stringify(list, null, 0);
                     });
 
                     const modeSelectorEl = document.createElement("select")
@@ -127,13 +129,17 @@ const widget_ext = {
                     instance.update()
                 };
 
-                let widget = node.addWidget("button", inputName, "[]", () => {
+                let input_widget = ComfyWidgets.STRING(node, inputName, ["", { default: "[]", multiline: true }], app);
+                let widget = node.addWidget("button", inputName + "_edit_button", "[]", () => {
                     openEditorDialog(node);
                 });
                 widget.label = "edit image annotate";
-                widget.serialize = false;
 
-                return { widget };
+                input_widget.widget.linkedWidgets = [widget];
+                // hack
+                input_widget.widget.type = "STRING"
+
+                return input_widget;
             },
         }
     }

@@ -10,7 +10,7 @@ from .....paper.arxiv.abs2304_05690.hybrik.utils.config import update_config
 from .....paper.arxiv.abs2304_05690.hybrik.utils.easydict import EasyDict
 from .....paper.arxiv.abs2304_05690.hybrik.utils.presets import SimpleTransform3DSMPLX
 from .....pipelines.abs2304_05690 import HybrikXPipeline
-from .....utils.json import np_dump
+from .....utils.json import np_dumps
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, StringType, gen_widget
 
@@ -88,11 +88,8 @@ def run_hybrikx(
     return (hybrikx_pipeline(input_image),)
 
 
-@register_node(category="arxiv/abs2304_05690", output=True)
-def save_hybrikx(
+@register_node(category="arxiv/abs2304_05690")
+def hybrikx_to_string(
     hybrikx_frame: HybrikxFrameType,
-    path: StringType = "hybrikx_frame.json",
-) -> None:
-    with open(path, "w") as f:
-        np_dump(hybrikx_frame, f)
-    return {}
+) -> tuple[StringType]:
+    return (np_dumps(hybrikx_frame),)

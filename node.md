@@ -72,6 +72,12 @@ ID : paper_playground_0_DiffusersPipelineSetIPAdapterScale
 CATEGORY : playground/tool  
 DESCRIPTION : No description.  
 
+## Save Ply
+
+ID : paper_playground_0_save_ply  
+CATEGORY : playground/utils/plyfile  
+DESCRIPTION : No description.  
+
 ## String Box
 
 ID : paper_playground_0_string_box  
@@ -96,10 +102,10 @@ ID : paper_playground_0_free_vram
 CATEGORY : playground/utils  
 DESCRIPTION : No description.  
 
-## Save Ply
+## Image Annotate Input
 
-ID : paper_playground_0_save_ply  
-CATEGORY : playground/utils/plyfile  
+ID : paper_playground_0_image_annotate_input  
+CATEGORY : playground/utils  
 DESCRIPTION : No description.  
 
 ## Abs 2312.02145 Diffusers Pipeline From Pretrained (Marigold)
@@ -138,9 +144,9 @@ ID : paper_playground_0_run_hybrikx
 CATEGORY : playground/arxiv/abs2304_05690  
 DESCRIPTION : No description.  
 
-## Save Hybrikx
+## Hybrikx To String
 
-ID : paper_playground_0_save_hybrikx  
+ID : paper_playground_0_hybrikx_to_string  
 CATEGORY : playground/arxiv/abs2304_05690  
 DESCRIPTION : No description.  
 
@@ -178,6 +184,30 @@ DESCRIPTION : No description.
 
 ID : paper_playground_0_run_oms_diffusers  
 CATEGORY : playground/arxiv/abs2403_01779  
+DESCRIPTION : No description.  
+
+## Load Efficient Sam
+
+ID : paper_playground_0_load_efficient_sam  
+CATEGORY : playground/arxiv/abs2312_00863  
+DESCRIPTION : No description.  
+
+## Run Efficient Sam
+
+ID : paper_playground_0_run_efficient_sam  
+CATEGORY : playground/arxiv/abs2312_00863  
+DESCRIPTION : No description.  
+
+## Load Vit Matte Pipeline
+
+ID : paper_playground_0_load_vit_matte_pipeline  
+CATEGORY : playground/arxiv/abs2305_15272  
+DESCRIPTION : No description.  
+
+## Run Vit Matte Pipeline
+
+ID : paper_playground_0_run_vit_matte_pipeline  
+CATEGORY : playground/arxiv/abs2305_15272  
 DESCRIPTION : No description.  
 
 ## Load Joytag

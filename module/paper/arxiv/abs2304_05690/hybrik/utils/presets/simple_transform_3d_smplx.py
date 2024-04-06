@@ -197,7 +197,7 @@ class SimpleTransform3DSMPLX(object):
                 normed_shape_disps = shape_dir_reshaped / shape_disps_norm
 
                 suppose_eye = torch.matmul(normed_shape_disps.T, normed_shape_disps)
-                torch_eyes = torch.eye(10)
+                torch_eyes = torch.eye(10, device=suppose_eye.device)
                 diff = torch.abs(suppose_eye - torch_eyes)
                 assert (diff < 1e-4).all(), diff
 

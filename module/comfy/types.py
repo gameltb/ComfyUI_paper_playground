@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Union
+from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Union, Optional
 
 import comfy.clip_vision
 import comfy.controlnet
@@ -32,7 +32,7 @@ class ComfyWidgetType(BaseModel):
         REGISTERED_TYPES.add(cls.TYPE)
 
 
-def find_comfy_widget_type_annotation(tp: Union[Annotated, ComfyWidgetType]) -> Union[ComfyWidgetType, None]:
+def find_comfy_widget_type_annotation(tp: Union[Annotated, ComfyWidgetType]) -> Optional[ComfyWidgetType]:
     if isinstance(tp, ComfyWidgetType):
         return tp
     elif hasattr(tp, "__metadata__"):
@@ -93,6 +93,7 @@ class StringWidget(ComfyWidgetType):
     TYPE = "STRING"
     forceInput: bool = False
     multiline: bool = None
+    dynamicPrompts: bool = None
 
 
 StringType = Annotated[str, StringWidget()]

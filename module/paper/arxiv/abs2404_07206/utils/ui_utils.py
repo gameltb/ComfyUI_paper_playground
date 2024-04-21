@@ -37,7 +37,6 @@ from diffusers import DDIMScheduler, AutoencoderKL
 from pipeline import GoodDragger
 
 from torchvision.utils import save_image
-from pytorch_lightning import seed_everything
 
 from .lora_utils import train_lora
 

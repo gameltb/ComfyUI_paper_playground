@@ -98,9 +98,11 @@ DiffusersComponentType = Annotated[
     Union[diffusers.ModelMixin, diffusers.SchedulerMixin], gen_widget("DIFFUSERS_COMPONENT")
 ]
 DiffusersLoRAType = Annotated[dict[str, torch.Tensor], gen_widget("DIFFUSERS_LORA")]
+MetaDiffusersPipelineType = Annotated[DiffusionPipeline, gen_widget("META_DIFFUSERS_PIPELINE")]
+"""Diffusers Pipeline without weights, make it deepcopy able."""
 
 
-@register_node(identifier="DiffusersPipelineFromPretrained", category="loaders")
+@register_node(identifier="DiffusersPipelineFromPretrained", category="diffusers/loaders")
 def diffusers_from_pretrained(
     pipeline_type: ComboWidget(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = DiffusionPipeline.__name__,
     local_files_only: BoolType = True,
@@ -136,26 +138,27 @@ SINGLE_FILE_CONFIG_FILES = {
 }
 
 
-@register_node(identifier="DiffusersPipelineFromSingleFile", category="loaders")
+@register_node(identifier="DiffusersPipelineFromSingleFile", category="diffusers/loaders")
 def diffusers_from_single_file(
     pipeline_type: ComboWidget(choices=DIFFUSERS_PIPELINE_CLASS_MAP) = StableDiffusionPipeline.__name__,
     ckpt_name: ComboWidget(choices=lambda: folder_paths.get_filename_list("checkpoints")) = None,
     single_file_config_file: ComboWidget(choices=SINGLE_FILE_CONFIG_FILES) = None,
+    inference_mode: BoolType = True,
 ) -> tuple[DiffusersPipelineType]:
     ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
-
-    pipeline = pipeline_type.from_single_file(
-        ckpt_path,
-        load_safety_checker=None,
-        torch_dtype=comfy.model_management.unet_dtype(),
-        local_files_only=True,
-        original_config_file=single_file_config_file,
-    ).to(device=comfy.model_management.unet_offload_device())
+    with torch.inference_mode(inference_mode):
+        pipeline = pipeline_type.from_single_file(
+            ckpt_path,
+            load_safety_checker=None,
+            torch_dtype=comfy.model_management.unet_dtype(),
+            local_files_only=True,
+            original_config_file=single_file_config_file,
+        ).to(device=comfy.model_management.unet_offload_device())
 
     return (pipeline,)
 
 
-@register_node(identifier="DiffusersPipelineSamplerBase", category="sampling")
+@register_node(identifier="DiffusersPipelineSamplerBase", category="diffusers/sampling")
 def diffusers_sampler_base(
     diffusers_pipeline: DiffusersPipelineType,
     seed: IntSeedType,
@@ -203,7 +206,7 @@ def diffusers_sampler_base(
     return (output.images.permute(0, 2, 3, 1),)
 
 
-@register_node(identifier="DiffusersComponentFromPretrained", category="loaders")
+@register_node(identifier="DiffusersComponentFromPretrained", category="diffusers/loaders")
 def diffusers_component_from_pretrained(
     component_type: Annotated[
         type[DiffusersComponentType],
@@ -242,7 +245,7 @@ def diffusers_component_from_pretrained(
     return (component,)
 
 
-@register_node(identifier="DiffusersPipelineComponentSet", category="tool")
+@register_node(identifier="DiffusersPipelineComponentSet", category="diffusers/tool")
 def set_component(
     diffusers_pipeline: DiffusersPipelineType,
     diffusers_component: DiffusersComponentType,
@@ -263,14 +266,14 @@ def set_component(
     return (diffusers_pipeline,)
 
 
-@register_node(identifier="DiffusersPipelineComponentGet", category="tool")
+@register_node(identifier="DiffusersPipelineComponentGet", category="diffusers/tool")
 def get_component(
     diffusers_pipeline: DiffusersPipelineType, component_key: StringType = ""
 ) -> tuple[DiffusersComponentType]:
     return (diffusers_pipeline.components.get(component_key),)
 
 
-@register_node(identifier="DiffusersPipelineComponentShow", category="tool")
+@register_node(identifier="DiffusersPipelineComponentShow", category="diffusers/tool")
 def show_component(diffusers_pipeline: DiffusersPipelineType) -> tuple[StringType]:
     components_map = {}
     for k, v in diffusers_pipeline.components.items():
@@ -279,12 +282,12 @@ def show_component(diffusers_pipeline: DiffusersPipelineType) -> tuple[StringTyp
     return (json.dumps(components_map, indent=4),)
 
 
-@register_node(identifier="DiffusersPipelineListAdapters", category="tool")
+@register_node(identifier="DiffusersPipelineListAdapters", category="diffusers/tool")
 def list_adapters(diffusers_pipeline: DiffusersPipelineType) -> tuple[StringType]:
     return (json.dumps(diffusers_pipeline.get_list_adapters(), indent=4),)
 
 
-@register_node(identifier="DiffusersLoadLora", category="loaders")
+@register_node(identifier="DiffusersLoadLora", category="diffusers/loaders")
 def load_lora(
     lora_name: Annotated[str, ComboWidget(choices=lambda: folder_paths.get_filename_list("loras"))],
 ) -> tuple[DiffusersLoRAType]:
@@ -294,7 +297,7 @@ def load_lora(
     return (lora,)
 
 
-@register_node(identifier="DiffusersPipelineLoadLoraWeights", category="tool")
+@register_node(identifier="DiffusersPipelineLoadLoraWeights", category="diffusers/tool")
 def load_lora_weights(
     diffusers_pipeline: DiffusersPipelineType, diffusers_lora: DiffusersLoRAType, adapter_name: StringType = ""
 ) -> tuple[DiffusersPipelineType]:
@@ -306,7 +309,7 @@ def load_lora_weights(
     return (diffusers_pipeline,)
 
 
-@register_node(identifier="DiffusersPipelineLoadIPAdapter", category="tool")
+@register_node(identifier="DiffusersPipelineLoadIPAdapter", category="diffusers/tool")
 def load_ip_adapter(
     diffusers_pipeline: DiffusersPipelineType,
     ip_adapter_name: Annotated[str, ComboWidget(choices=lambda: get_diffusers_ip_adapter_paths())],
@@ -327,7 +330,7 @@ def load_ip_adapter(
     return (diffusers_pipeline,)
 
 
-@register_node(identifier="DiffusersPipelineSetIPAdapterScale", category="tool")
+@register_node(identifier="DiffusersPipelineSetIPAdapterScale", category="diffusers/tool")
 def set_ip_adapter_scale(
     diffusers_pipeline: DiffusersPipelineType,
     ip_adapter_scale: FloatPercentageType = 0.5,

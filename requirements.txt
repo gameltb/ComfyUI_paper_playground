@@ -1,6 +1,7 @@
 diffusers >= 0.26.0
 omegaconf
 accelerate
+pydantic
 
 # for lgm
 roma
@@ -10,3 +11,5 @@ plyfile
 # DynamiCrafter
 open_clip_torch
 kornia
+
+trimesh

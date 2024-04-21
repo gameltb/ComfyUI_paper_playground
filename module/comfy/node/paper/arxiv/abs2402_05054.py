@@ -1,8 +1,9 @@
 from typing import Annotated
+import os
 
 import comfy.utils
 
-from .....common import path_tool
+from .....common import file_get_tool, path_tool
 from .....paper.arxiv.abs2402_05054.core.models import LGM
 from .....paper.arxiv.abs2402_05054.core.options import config_defaults
 from .....pipelines.abs2402_05054 import LGMPipeline
@@ -15,10 +16,17 @@ LGMPipelineType = Annotated[LGMPipeline, gen_widget("LGM_PIPELINE")]
 
 @register_node(category="arxiv/abs2402_05054")
 def load_lgm(
-    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, ""))],
     lgb_config: Annotated[str, ComboWidget(choices=["big", "default", "small", "tiny"])] = "big",
 ) -> tuple[LGMPipelineType]:
-    ckpt_path = path_tool.get_model_full_path(__name__, "", ckpt_path)
+    model_path = file_get_tool.find_or_download_huggingface_repo(
+        [
+            file_get_tool.FileSource(
+                loacal_folder=path_tool.get_model_dir(__name__, ""),
+            ),
+            file_get_tool.FileSourceHuggingface(repo_id="ashawkey/LGM"),
+        ]
+    )
+    ckpt_path = os.path.join(model_path, "model.safetensors")
 
     lgm_model = LGM(config_defaults[lgb_config])
 

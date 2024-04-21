@@ -28,7 +28,7 @@ class IMAGE_ANNOTATE_Widget(ComfyWidgetType):
     image_input_name: str = "image"
 
     def __getitem__(self, item):
-        if isinstance(item,str):
+        if isinstance(item, str):
             return [ImageAnnotateCanvasSelect(**a) for a in json.loads(item)]
         return item
 

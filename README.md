@@ -69,6 +69,7 @@ def example(
 ) -> tuple[ExampleType, SimpleType]:  # return type
     """example node description."""
     # do what you want.
+    # Note: The node caches all input parameters for other or future node executions, so these parameters should be read-only, there are currently no constraints to guarantee this, accidentally modifying the parameter object may result in unexpected behavior, in this case please use the copy or copy method of the object.
     pass
 ```
 

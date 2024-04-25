@@ -122,6 +122,8 @@ VaeType = Annotated[comfy.sd.VAE, gen_widget("VAE")]
 
 ModelType = Annotated[comfy.model_patcher.ModelPatcher, gen_widget("MODEL")]
 
+SigmasType = Annotated[torch.Tensor, gen_widget("SIGMAS")]
+
 ClipType = Annotated[comfy.sd.CLIP, gen_widget("CLIP")]
 
 ConditioningType = Annotated[list[tuple[torch.Tensor, dict[str, torch.Tensor]]], gen_widget("CONDITIONING")]

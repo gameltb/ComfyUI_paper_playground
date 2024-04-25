@@ -448,7 +448,6 @@ class MVDreamPipeline(DiffusionPipeline):
         num_frames: int = 4,
         device=torch.device("cuda:0"),
     ):
-        self.unet = self.unet.to(device=device)
         self.vae = self.vae.to(device=device)
         self.text_encoder = self.text_encoder.to(device=device)
 
@@ -498,6 +497,8 @@ class MVDreamPipeline(DiffusionPipeline):
 
         # Prepare extra step kwargs.
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
+
+        self.unet = self.unet.to(device=device)
 
         # Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order

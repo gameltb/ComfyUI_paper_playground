@@ -40,11 +40,11 @@ class AutoManage:
         self.user = obj
 
     def load(self):
-        self.user.keep_in_load = True
+        self.user.set_keep_status()
         self.user.load()
 
     def offload(self):
-        self.user.keep_in_load = False
+        self.user.remove_keep_status()
 
     def __enter__(self):
         self.load()
@@ -128,6 +128,15 @@ class ResourcesUser:
     def offload(self, device: Optional[resources_device] = None):
         raise NotImplementedError()
 
+    def is_keep_status(self):
+        return self.keep_in_load
+
+    def set_keep_status(self):
+        self.keep_in_load = True
+
+    def remove_keep_status(self):
+        self.keep_in_load = False
+
 
 class TorchStateDictWrapper(ResourcesUser):
     pass
@@ -144,15 +153,18 @@ class TorchModuleWrapper(ResourcesUser):
         return self.torch_model
 
     def load(self, device: Optional[resources_device] = None):
+        origin_keep_in_load = self.keep_in_load
+        self.keep_in_load = True
         try:
-            self.torch_model.to(device=self.device_strategy.get_runtime_device())
-        except Exception:
-            origin_keep_in_load = self.keep_in_load
-            self.keep_in_load = True
-            self.device_strategy.free_runtime_device(self.module_size(self.torch_model) + self.inference_memory_size)
-            self.keep_in_load = origin_keep_in_load
+            try:
+                self.torch_model.to(device=self.device_strategy.get_runtime_device())
+            except Exception:
+                self.device_strategy.free_runtime_device(self.module_size(self.torch_model))
+                self.torch_model.to(device=self.device_strategy.get_runtime_device())
 
-            self.torch_model.to(device=self.device_strategy.get_runtime_device())
+            self.device_strategy.free_runtime_device(self.inference_memory_size)
+        finally:
+            self.keep_in_load = origin_keep_in_load
 
     def offload(self, device: Optional[resources_device] = None):
         self.torch_model.to(device=self.device_strategy.get_offload_device())
@@ -174,11 +186,6 @@ class DiffusersPipelineWrapper(ResourcesUser):
         self.device_strategy = device_strategy
         self.all_module_hooks_map = {}
 
-    @property
-    def manage_object(self):
-        return self.pipeline
-
-    def load(self, device: Optional[resources_device] = None):
         all_model_components = {k: v for k, v in self.pipeline.components.items() if isinstance(v, torch.nn.Module)}
 
         for name, model in all_model_components.items():
@@ -191,8 +198,20 @@ class DiffusersPipelineWrapper(ResourcesUser):
             add_hook_to_module(model, hook, append=True)
             self.all_module_hooks_map[name] = hook
 
+    @property
+    def manage_object(self):
+        return self.pipeline
+
+    def load(self, device: Optional[resources_device] = None):
+        pass
+
     def offload(self, device: Optional[resources_device] = None):
         pass
+
+    def remove_keep_status(self):
+        super().remove_keep_status()
+        for name, hook in self.all_module_hooks_map.items():
+            hook.post_forward(None, None)
 
     @staticmethod
     def pipeline_size(pipeline: diffusers.DiffusionPipeline):
@@ -216,12 +235,13 @@ class ResourcesManagement:
         if self.get_free() > size:
             return
 
-        self.clean_user()
-        if self.get_free() > size:
-            return
+        for _ in range(2):
+            self.clean_user()
+            if self.get_free() > size:
+                return
 
         for user in self.resources_users:
-            if user.keep_in_load:
+            if user.is_keep_status():
                 continue
             if user.device_strategy.is_manage_by(self):
                 user.offload()

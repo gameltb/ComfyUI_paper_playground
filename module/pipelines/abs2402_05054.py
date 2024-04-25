@@ -21,7 +21,7 @@ class LGMPipeline(PlaygroundPipeline):
 
     @torch.no_grad()
     def __call__(self, mv_image, input_elevation=0):
-        with AutoManage(self.lgm) as am:
+        with AutoManage(self.lgm, inference_memory_size=1024 * 1024 * 1024 * 2) as am:
             device = am.get_device()
             input_image = np.stack(
                 [mv_image[1], mv_image[2], mv_image[3], mv_image[0]], axis=0
@@ -38,7 +38,7 @@ class LGMPipeline(PlaygroundPipeline):
             rays_embeddings = self.lgm.prepare_default_rays(device, elevation=input_elevation)
             input_image = torch.cat([input_image, rays_embeddings], dim=1).unsqueeze(0)  # [1, 4, 9, H, W]
 
-            with torch.autocast(device_type=device, dtype=torch.float16):
+            with torch.autocast(device_type=device.type, dtype=torch.float16):
                 # generate gaussians
                 gaussians = self.lgm.forward_gaussians(input_image)
 

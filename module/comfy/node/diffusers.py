@@ -9,7 +9,7 @@ import comfy.utils
 import diffusers
 import folder_paths
 import torch
-from diffusers import DiffusionPipeline, StableDiffusionPipeline
+from diffusers import DDIMScheduler, DiffusionPipeline, StableDiffusionPipeline
 
 from ...core.runtime_resource_management import AutoManage
 from ..registry import register_node
@@ -24,6 +24,8 @@ from ..types import (
     LatentType,
     StringMultilineType,
     StringType,
+    ModelType,
+    SigmasType,
     gen_widget,
 )
 
@@ -338,3 +340,28 @@ def set_ip_adapter_scale(
     diffusers_pipeline.set_ip_adapter_scale(ip_adapter_scale)
 
     return (diffusers_pipeline,)
+
+
+@register_node(category="diffusers/tool")
+def get_hype_sd_sigmas(model: ModelType, num_inference_steps: IntStepsType = 1) -> tuple[SigmasType]:
+    scheduler = DDIMScheduler.from_config(
+        {
+            "_class_name": "PNDMScheduler",
+            "_diffusers_version": "0.6.0",
+            "beta_end": 0.012,
+            "beta_schedule": "scaled_linear",
+            "beta_start": 0.00085,
+            "num_train_timesteps": 1000,
+            "set_alpha_to_one": False,
+            "skip_prk_steps": True,
+            "steps_offset": 1,
+            "trained_betas": None,
+            "clip_sample": False,
+        },
+        timestep_spacing="trailing",
+    )
+    scheduler.set_timesteps(num_inference_steps)
+    comfy.model_management.load_models_gpu([model])
+    sigmas = model.model.model_sampling.sigma(scheduler.timesteps)
+    sigmas = torch.cat([sigmas, sigmas.new_zeros([1])])
+    return (sigmas,)

@@ -7,11 +7,14 @@ This is the official implementation of *LGM: Large Multi-View Gaussian Model for
 
 https://github.com/3DTopia/LGM/assets/25863658/cf64e489-29f3-4935-adba-e393a24c26e8
 
+### News
+[2024.4.3] Thanks to [@yxymessi](https://github.com/yxymessi) and [@florinshen](https://github.com/florinshen), we have fixed a **severe bug in rotation normalization** [here](https://github.com/3DTopia/LGM/commit/9a0797cdbacf8e6216d0108cb00cbe43b9cb3d81). We have finetuned the model with correct normalization for 30 more epochs and uploaded new checkpoints.
+
 ### Replicate Demo:
 * gaussians: [demo](https://replicate.com/camenduru/lgm) | [code](https://github.com/camenduru/LGM-replicate)
 * mesh: [demo](https://replicate.com/camenduru/lgm-ply-to-glb) | [code](https://github.com/camenduru/LGM-ply-to-glb-replicate)
 
-Thanks [@camenduru](https://github.com/camenduru)!
+Thanks to [@camenduru](https://github.com/camenduru)!
 
 ### Install
 
@@ -39,7 +42,7 @@ Our pretrained weight can be downloaded from [huggingface](https://huggingface.c
 For example, to download the fp16 model for inference:
 ```bash
 mkdir pretrained && cd pretrained
-wget https://huggingface.co/ashawkey/LGM/resolve/main/model_fp16.safetensors
+wget https://huggingface.co/ashawkey/LGM/resolve/main/model_fp16_fixrot.safetensors
 cd ..
 ```
 

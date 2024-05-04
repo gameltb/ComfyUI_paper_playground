@@ -1,5 +1,6 @@
 import gc
 import sys
+import weakref
 from typing import Any, Optional
 
 import diffusers
@@ -7,7 +8,6 @@ import psutil
 import torch
 from accelerate.hooks import ModelHook, add_hook_to_module
 from accelerate.utils import send_to_device
-import accelerate
 
 resources_device = torch.device
 
@@ -44,7 +44,7 @@ class AutoManage:
         self.user.load()
 
     def offload(self):
-        self.user.remove_keep_status()
+        self.user.unset_keep_status()
 
     def __enter__(self):
         self.load()
@@ -134,40 +134,55 @@ class ResourcesUser:
     def set_keep_status(self):
         self.keep_in_load = True
 
-    def remove_keep_status(self):
+    def unset_keep_status(self):
         self.keep_in_load = False
 
+    def clearable(self):
+        return sys.getrefcount(self.manage_object) <= 2
 
-class TorchStateDictWrapper(ResourcesUser):
-    pass
 
-
-class TorchModuleWrapper(ResourcesUser):
-    def __init__(self, torch_model: torch.nn.Module, device_strategy: DeviceStrategy) -> None:
+class WeakRefResourcesUser(ResourcesUser):
+    def __init__(self) -> None:
         super().__init__()
-        self.torch_model = torch_model
-        self.device_strategy = device_strategy
+        self.manage_object_weak_ref = lambda: None
 
     @property
     def manage_object(self):
-        return self.torch_model
+        return self.manage_object_weak_ref()
+
+    def manage_object_ref(self, manage_object):
+        self.manage_object_weak_ref = weakref.ref(manage_object)
+
+    def clearable(self):
+        return self.manage_object is None
+
+
+class TorchModuleWrapper(WeakRefResourcesUser):
+    def __init__(self, torch_model: torch.nn.Module, device_strategy: DeviceStrategy) -> None:
+        super().__init__()
+        self.device_strategy = device_strategy
+        self.manage_object_ref(torch_model)
 
     def load(self, device: Optional[resources_device] = None):
+        torch_model: torch.nn.Module = self.manage_object
+
         origin_keep_in_load = self.keep_in_load
         self.keep_in_load = True
         try:
             try:
-                self.torch_model.to(device=self.device_strategy.get_runtime_device())
+                torch_model.to(device=self.device_strategy.get_runtime_device())
             except Exception:
-                self.device_strategy.free_runtime_device(self.module_size(self.torch_model))
-                self.torch_model.to(device=self.device_strategy.get_runtime_device())
+                self.device_strategy.free_runtime_device(self.module_size(torch_model))
+                torch_model.to(device=self.device_strategy.get_runtime_device())
 
             self.device_strategy.free_runtime_device(self.inference_memory_size)
         finally:
             self.keep_in_load = origin_keep_in_load
 
     def offload(self, device: Optional[resources_device] = None):
-        self.torch_model.to(device=self.device_strategy.get_offload_device())
+        torch_model: torch.nn.Module = self.manage_object
+
+        torch_model.to(device=self.device_strategy.get_offload_device())
 
     @staticmethod
     def module_size(module: torch.nn.Module):
@@ -179,14 +194,13 @@ class TorchModuleWrapper(ResourcesUser):
         return module_mem
 
 
-class DiffusersPipelineWrapper(ResourcesUser):
+class DiffusersPipelineWrapper(WeakRefResourcesUser):
     def __init__(self, pipeline: diffusers.DiffusionPipeline, device_strategy: DeviceStrategy) -> None:
         super().__init__()
-        self.pipeline = pipeline
         self.device_strategy = device_strategy
         self.all_module_hooks_map = {}
 
-        all_model_components = {k: v for k, v in self.pipeline.components.items() if isinstance(v, torch.nn.Module)}
+        all_model_components = {k: v for k, v in pipeline.components.items() if isinstance(v, torch.nn.Module)}
 
         for name, model in all_model_components.items():
             if name in self.all_module_hooks_map:
@@ -198,9 +212,7 @@ class DiffusersPipelineWrapper(ResourcesUser):
             add_hook_to_module(model, hook, append=True)
             self.all_module_hooks_map[name] = hook
 
-    @property
-    def manage_object(self):
-        return self.pipeline
+        self.manage_object_ref(pipeline)
 
     def load(self, device: Optional[resources_device] = None):
         pass
@@ -208,8 +220,8 @@ class DiffusersPipelineWrapper(ResourcesUser):
     def offload(self, device: Optional[resources_device] = None):
         pass
 
-    def remove_keep_status(self):
-        super().remove_keep_status()
+    def unset_keep_status(self):
+        super().unset_keep_status()
         for name, hook in self.all_module_hooks_map.items():
             hook.post_forward(None, None)
 
@@ -235,10 +247,9 @@ class ResourcesManagement:
         if self.get_free() > size:
             return
 
-        for _ in range(2):
-            self.clean_user()
-            if self.get_free() > size:
-                return
+        self.clean_user()
+        if self.get_free() > size:
+            return
 
         for user in self.resources_users:
             if user.is_keep_status():
@@ -275,7 +286,7 @@ class ResourcesManagement:
     @classmethod
     def clean_user(cls):
         for user in cls.resources_users[:]:
-            if sys.getrefcount(user.manage_object) <= 2:
+            if user.clearable():
                 cls.remove_user(user)
         gc.collect()
 

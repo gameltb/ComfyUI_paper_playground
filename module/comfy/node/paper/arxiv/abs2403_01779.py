@@ -107,7 +107,7 @@ class OmsDiffusionPipeline(PlaygroundPipeline):
         if negative_prompt is None:
             negative_prompt = "monochrome, lowres, bad anatomy, worst quality, low quality"
 
-        with AutoManage(self.base_pipeline) as am:
+        with AutoManage(self.base_pipeline, x_input_shape=(1, 4, int(height / 8), int(width / 8))) as am:
             cloth = (cloth.to(am.get_device()) * cloth_mask.to(am.get_device())).to(dtype=torch.float16)
             with torch.inference_mode():
                 prompt_embeds, negative_prompt_embeds = self.base_pipeline.encode_prompt(

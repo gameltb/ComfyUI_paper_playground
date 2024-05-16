@@ -19,6 +19,7 @@ class AutoManage:
         runtime_device=None,
         offload_device=resources_device("cpu"),
         inference_memory_size=1024 * 1024 * 1024,
+        **kwargs,
     ) -> None:
         if runtime_device is None:
             device_strategy = FixDeviceStrategy()
@@ -36,8 +37,9 @@ class AutoManage:
                 ResourcesManagement.add_user(user)
             obj = user
         assert isinstance(obj, ResourcesUser)
-        obj.inference_memory_size = inference_memory_size
         self.user = obj
+        self.set_inference_memory_size(inference_memory_size)
+        self.set_user_context(kwargs)
 
     def load(self):
         self.user.set_keep_status()
@@ -55,6 +57,13 @@ class AutoManage:
 
     def get_device(self):
         return self.user.device_strategy.get_runtime_device()
+
+    def set_inference_memory_size(self, inference_memory_size):
+        self.user.inference_memory_size = inference_memory_size
+
+    def set_user_context(self, user_context):
+        self.user_context = user_context
+        self.user.update_user_context(user_context)
 
 
 class AutoManageHook(ModelHook):
@@ -117,6 +126,7 @@ class ResourcesUser:
         self.keep_in_load = False
         self.device_strategy = DeviceStrategy()
         self.inference_memory_size = 0
+        self.user_context = {}
 
     @property
     def manage_object(self):
@@ -139,6 +149,9 @@ class ResourcesUser:
 
     def clearable(self):
         return sys.getrefcount(self.manage_object) <= 2
+
+    def update_user_context(self, user_context):
+        self.user_context = user_context
 
 
 class WeakRefResourcesUser(ResourcesUser):
@@ -175,6 +188,16 @@ class TorchModuleWrapper(WeakRefResourcesUser):
                 self.device_strategy.free_runtime_device(self.module_size(torch_model))
                 torch_model.to(device=self.device_strategy.get_runtime_device())
 
+            x_input_shape = self.user_context.get("x_input_shape", None)
+            if x_input_shape is not None:
+                module_cls_name = torch_model.__class__.__name__
+                if "AutoencoderKL" in module_cls_name:
+                    area = x_input_shape[0] * x_input_shape[2] * x_input_shape[3]
+                    self.inference_memory_size = int(2178 * area * 64)
+                elif "UNet2DConditionModel" in module_cls_name:
+                    area = x_input_shape[0] * x_input_shape[2] * x_input_shape[3]
+                    self.inference_memory_size = int((area * torch_model.dtype.itemsize / 50) * (1024 * 1024))
+
             self.device_strategy.free_runtime_device(self.inference_memory_size)
         finally:
             self.keep_in_load = origin_keep_in_load
@@ -198,7 +221,7 @@ class DiffusersPipelineWrapper(WeakRefResourcesUser):
     def __init__(self, pipeline: diffusers.DiffusionPipeline, device_strategy: DeviceStrategy) -> None:
         super().__init__()
         self.device_strategy = device_strategy
-        self.all_module_hooks_map = {}
+        self.all_module_hooks_map: dict[str, AutoManageHook] = {}
 
         all_model_components = {k: v for k, v in pipeline.components.items() if isinstance(v, torch.nn.Module)}
 
@@ -224,6 +247,11 @@ class DiffusersPipelineWrapper(WeakRefResourcesUser):
         super().unset_keep_status()
         for name, hook in self.all_module_hooks_map.items():
             hook.post_forward(None, None)
+
+    def update_user_context(self, user_context):
+        super().update_user_context(user_context)
+        for name, hook in self.all_module_hooks_map.items():
+            hook.am.set_user_context(user_context)
 
     @staticmethod
     def pipeline_size(pipeline: diffusers.DiffusionPipeline):
@@ -327,3 +355,7 @@ def get_management(device: resources_device) -> ResourcesManagement:
             MANAGEMENT_INSTANCE_MAP[device] = MemoryManagementCUDA(device)
 
     return MANAGEMENT_INSTANCE_MAP[device]
+
+
+# device_map = accelerate.infer_auto_device_map(self.real_model, max_memory={0: "{}MiB".format(lowvram_model_memory // (1024 * 1024)), "cpu": "16GiB"})
+# accelerate.dispatch_model(self.real_model, device_map=device_map, main_device=self.device)

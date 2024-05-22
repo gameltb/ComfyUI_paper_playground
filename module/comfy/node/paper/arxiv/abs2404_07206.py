@@ -1,13 +1,13 @@
 import os
-from typing import Annotated
+from typing import Annotated, List
 
 import torch
 import torch.nn.functional as F
 from einops import rearrange
-from typing import List
 
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2404_07206.pipeline import GoodDragger
+from ....node.utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import (
     BoolType,
@@ -15,12 +15,11 @@ from ....types import (
     ImageType,
     IntStepsType,
     IntType,
+    MaskType,
     StringMultilineType,
     StringType,
-    MaskType,
 )
 from ...diffusers import DiffusersPipelineType
-from ....node.utils_image_annotate import ImageAnnotateType
 
 
 def preprocess_image(image, device):
@@ -87,7 +86,7 @@ def run_gooddrag(
     height, width = image.shape[1:3]
     n_inference_step = 50
     guidance_scale = 1.0
-    
+
     with torch.inference_mode(False):
         diffusers_pipeline = diffusers_pipeline.to("cuda")
 
@@ -117,7 +116,7 @@ def run_gooddrag(
 
         # source_image = preprocess_image(source_image, device)
         return_intermediate_images = False
-        save_intermedia= False
+        save_intermedia = False
         points = [[147, 67], [202, 46], [410, 88], [336, 54]]
 
         with AutoManage(dragger.model) as am:
@@ -131,7 +130,6 @@ def run_gooddrag(
         save_images_with_pillow(drag_image, base_filename="drag_image")
 
     gen_image = F.interpolate(gen_image, (height, width), mode="bilinear")
-
 
     new_points = []
     for i in range(len(new_points_handle)):

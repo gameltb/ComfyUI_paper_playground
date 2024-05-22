@@ -24,3 +24,8 @@ try:
     from .node import rmbg
 except Exception:
     traceback.print_exc()
+
+# try:
+#     from . import profile
+# except Exception:
+#     traceback.print_exc()

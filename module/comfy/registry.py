@@ -1,9 +1,9 @@
 import inspect
 import re
-from functools import wraps
 import typing
+from functools import wraps
 
-from .types import find_comfy_widget_type_annotation, ReturnType
+from .types import ReturnType, find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}

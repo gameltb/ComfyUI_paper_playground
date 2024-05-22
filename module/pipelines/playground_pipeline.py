@@ -18,7 +18,6 @@ import logging
 from typing import Any, Dict
 
 import torch
-
 from diffusers.configuration_utils import ConfigMixin
 
 logger = logging.getLogger(__name__)

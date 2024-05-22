@@ -11,10 +11,10 @@ from ........module.core.patch_able_module import ControlFlowPatchAbleModuleMixi
 
 class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin):
     supported_patch = {
-        "input_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "input_block_patch_after_skip": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "middle_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "output_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
+        "comfyui_input_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
+        "comfyui_input_block_patch_after_skip": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
+        "comfyui_middle_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
+        "comfyui_output_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
     }
 
     def forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options={}, **kwargs):

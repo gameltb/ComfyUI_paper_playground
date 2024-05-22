@@ -22,10 +22,10 @@ from ..types import (
     IntSeedType,
     IntStepsType,
     LatentType,
-    StringMultilineType,
-    StringType,
     ModelType,
     SigmasType,
+    StringMultilineType,
+    StringType,
     gen_widget,
 )
 

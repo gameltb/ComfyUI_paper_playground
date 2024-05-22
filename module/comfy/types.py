@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Union, Optional
+from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Optional, Union
 
 import comfy.clip_vision
 import comfy.controlnet

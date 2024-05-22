@@ -1,7 +1,7 @@
 # module witch controlflow can be patch
+from collections import OrderedDict
 from dataclasses import dataclass
 from enum import IntEnum
-from collections import OrderedDict
 
 
 class PatchType(IntEnum):

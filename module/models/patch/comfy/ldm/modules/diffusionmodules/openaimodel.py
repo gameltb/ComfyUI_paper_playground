@@ -1,3 +1,5 @@
+from typing import Callable, TypedDict
+
 import torch
 from comfy.ldm.modules.diffusionmodules.openaimodel import (
     UNetModel,
@@ -6,17 +8,17 @@ from comfy.ldm.modules.diffusionmodules.openaimodel import (
     timestep_embedding,
 )
 
-from ........module.core.patch_able_module import ControlFlowPatchAbleModuleMixin, PatchDefine, PatchType
+from ........module.core.patch_able_module import ControlFlowPatchAbleModuleMixin
 
 
-class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin):
-    supported_patch = {
-        "comfyui_input_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "comfyui_input_block_patch_after_skip": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "comfyui_middle_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-        "comfyui_output_block_patch": PatchDefine(patch_type=PatchType.RANDOM_ORDER),
-    }
+class PatchModuleMapType(TypedDict, total=False):
+    comfyui_input_block_patch: list[Callable[[torch.Tensor, dict], torch.Tensor]]
+    comfyui_input_block_patch_after_skip: list[Callable[[torch.Tensor, dict], torch.Tensor]]
+    comfyui_middle_block_patch: list[Callable[[torch.Tensor, dict], torch.Tensor]]
+    comfyui_output_block_patch: list[Callable[[torch.Tensor, torch.Tensor, dict], tuple[torch.Tensor, torch.Tensor]]]
 
+
+class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin[PatchModuleMapType]):
     def forward(self, x, timesteps=None, context=None, y=None, control=None, transformer_options={}, **kwargs):
         """
         Apply the model to an input batch.
@@ -59,12 +61,12 @@ class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin):
                 image_only_indicator=image_only_indicator,
             )
             h = apply_control(h, control, "input")
-            for p in self.get_patch("input_block_patch"):
+            for p in self.patch_module.get("comfyui_input_block_patch"):
                 h = p(h, transformer_options)
 
             hs.append(h)
 
-            for p in self.get_patch("input_block_patch_after_skip"):
+            for p in self.patch_module.get("comfyui_input_block_patch_after_skip"):
                 h = p(h, transformer_options)
 
         transformer_options["block"] = ("middle", 0)
@@ -80,14 +82,14 @@ class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin):
                 image_only_indicator=image_only_indicator,
             )
         h = apply_control(h, control, "middle")
-        for p in self.get_patch("middle_block_patch"):
+        for p in self.patch_module.get("comfyui_middle_block_patch"):
             h = p(h, transformer_options)
 
         for id, module in enumerate(self.output_blocks):
             transformer_options["block"] = ("output", id)
             hsp = hs.pop()
             hsp = apply_control(hsp, control, "output")
-            for p in self.get_patch("output_block_patch"):
+            for p in self.patch_module.get("comfyui_output_block_patch"):
                 h, hsp = p(h, hsp, transformer_options)
 
             h = torch.cat([h, hsp], dim=1)

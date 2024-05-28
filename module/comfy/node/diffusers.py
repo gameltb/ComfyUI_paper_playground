@@ -211,7 +211,7 @@ def diffusers_sampler_base(
 @register_node(identifier="DiffusersComponentFromPretrained", category="diffusers/loaders")
 def diffusers_component_from_pretrained(
     component_type: Annotated[
-        type[DiffusersComponentType],
+        DiffusersComponentType,
         ComboWidget(choices=DIFFUSERS_MODEL_CLASS_MAP | DIFFUSERS_SCHEDULER_CLASS_MAP, ext_none_choice="AUTO"),
     ] = "AUTO",
     local_files_only: BoolType = True,

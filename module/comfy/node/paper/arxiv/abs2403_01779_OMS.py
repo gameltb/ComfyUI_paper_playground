@@ -165,9 +165,9 @@ OmsDiffusionPipelineType = Annotated[OmsDiffusionPipeline, gen_widget("OMS_DIFFU
 @register_node(category="arxiv/abs2403_01779")
 def load_oms_diffusion(
     diffusers_pipeline: DiffusersPipelineType,
-    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, ""))],
+    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_data_path_file_list(__name__))],
 ) -> tuple[OmsDiffusionPipelineType]:
-    ckpt_path = path_tool.get_model_full_path(__name__, "", ckpt_path)
+    ckpt_path = path_tool.get_data_path(__name__, ckpt_path)
 
     return (OmsDiffusionPipeline.from_base_pipeline(diffusers_pipeline, ckpt_path),)
 

@@ -14,7 +14,7 @@ from .....utils.json import np_dumps
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, StringType, gen_widget
 
-SMPLX_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs/smplx")
+SMPLX_CONFIG_PATH = path_tool.get_paper_repo_path(__name__, "configs", "smplx")
 SMPLX_CONFIG_FILES = {filename: os.path.join(SMPLX_CONFIG_PATH, filename) for filename in os.listdir(SMPLX_CONFIG_PATH)}
 
 
@@ -25,9 +25,9 @@ HybrikxFrameType = Annotated[dict, gen_widget("HYBRIKX_FRAME")]
 @register_node(category="arxiv/abs2304_05690")
 def load_hybrikx(
     cfg_file_path: Annotated[str, ComboWidget(choices=SMPLX_CONFIG_FILES)],
-    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, "hybrikx"))],
+    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_data_path_file_list(__name__, "hybrikx"))],
 ) -> tuple[HybrikxPipelineType]:
-    ckpt_path = path_tool.get_model_full_path(__name__, "hybrikx", ckpt_path)
+    ckpt_path = path_tool.get_data_path(__name__, "hybrikx", ckpt_path)
 
     cfg = update_config(cfg_file_path)
 

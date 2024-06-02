@@ -7,7 +7,7 @@ from einops import rearrange
 
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2404_07206.pipeline import GoodDragger
-from ....node.utils_image_annotate import ImageAnnotateType
+from ...utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import (
     BoolType,

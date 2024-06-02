@@ -77,7 +77,7 @@ def load_joytag() -> tuple[JoytagPipelineType]:
     model_path = file_get_tool.find_or_download_huggingface_repo(
         [
             file_get_tool.FileSource(
-                loacal_folder=path_tool.get_model_dir(__name__, ""),
+                loacal_folder=path_tool.get_data_path(__name__),
             ),
             file_get_tool.FileSourceHuggingface(repo_id="fancyfeast/joytag"),
         ]

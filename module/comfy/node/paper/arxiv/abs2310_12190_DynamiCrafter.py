@@ -241,7 +241,7 @@ class DynamiCrafterPipeline(PlaygroundPipeline):
 
 DynamiCrafterPipelineType = Annotated[DynamiCrafterPipeline, gen_widget("DYNAMI_CRAFTER_PIPELINE")]
 
-DYNAMI_CRAFTER_CONFIG_PATH = os.path.join(path_tool.get_paper_repo_path(__name__), "configs")
+DYNAMI_CRAFTER_CONFIG_PATH = path_tool.get_paper_repo_path(__name__, "configs")
 DYNAMI_CRAFTER_CONFIG_FILES = {
     filename: os.path.join(DYNAMI_CRAFTER_CONFIG_PATH, filename) for filename in os.listdir(DYNAMI_CRAFTER_CONFIG_PATH)
 }
@@ -249,10 +249,10 @@ DYNAMI_CRAFTER_CONFIG_FILES = {
 
 @register_node(category="arxiv/abs2310_12190")
 def load_dynami_crafter(
-    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_model_filename_list(__name__, ""))],
+    ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_data_path_file_list(__name__))],
     dynami_crafter_config: Annotated[str, ComboWidget(choices=DYNAMI_CRAFTER_CONFIG_FILES)] = "inference_512_v1.0.yaml",
 ) -> tuple[DynamiCrafterPipelineType]:
-    ckpt_path = path_tool.get_model_full_path(__name__, "", ckpt_path)
+    ckpt_path = path_tool.get_data_path(__name__, ckpt_path)
 
     config = OmegaConf.load(dynami_crafter_config)
     model_config = config.pop("model", OmegaConf.create())

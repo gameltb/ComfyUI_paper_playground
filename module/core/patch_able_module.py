@@ -26,7 +26,7 @@ class PatchDefine:
 
 
 class ControlFlowPatchModuleMixin:
-    def get_patch_name(self) -> str:
+    def get_patch_module_name(self) -> str:
         """
 
         Returns:
@@ -42,18 +42,18 @@ class ControlFlowPatchAbleModuleMixin(Generic[T]):
     """fail fast."""
 
     def __init__(self) -> None:
-        self.init_patch()
+        self.patch_module_init()
 
-    def init_patch(self) -> None:
+    def patch_module_init(self) -> None:
         self.patch_module_map: T = OrderedDict()
-        for patch_name, patch_type_hint in self.get_patch_type_hints().items():
+        for patch_name, patch_type_hint in self._get_patch_module_type_hints().items():
             patch_define = PatchDefine.from_type_hint(patch_type_hint)
             if patch_define.patch_type == PatchType.RANDOM_ORDER:
                 self.patch_module_map[patch_name] = []
             else:
                 self.patch_module_map[patch_name] = None
 
-    def get_patch_type_hints(self):
+    def _get_patch_module_type_hints(self):
         type_hints = None
 
         patch_module_map_type = None
@@ -66,10 +66,10 @@ class ControlFlowPatchAbleModuleMixin(Generic[T]):
 
         return type_hints
 
-    def get_patch_define(self, path_type: str):
+    def _get_patch_module_define(self, path_type: str):
         patch_define = None
 
-        type_hints = self.get_patch_type_hints()
+        type_hints = self._get_patch_module_type_hints()
         if type_hints is not None:
             type_hint = type_hints.get(path_type, None)
             if type_hint is not None:
@@ -79,14 +79,14 @@ class ControlFlowPatchAbleModuleMixin(Generic[T]):
             raise Exception(f"patch_define {path_type} not registered")
         return patch_define
 
-    def add_patch(self, path_type: str, patch_object: ControlFlowPatchModuleMixin):
-        patch_define = self.get_patch_define(path_type)
+    def add_patch_module(self, path_type: str, patch_object: ControlFlowPatchModuleMixin):
+        patch_define = self._get_patch_module_define(path_type)
 
         if patch_define.patch_type == PatchType.EXCLUSIVE:
             if path_type in self.patch_module_map:
                 raise Exception(f"EXCLUSIVE patch {path_type} has been applied.")
 
-        patch_name = patch_object.get_patch_name()
+        patch_name = patch_object.get_patch_module_name()
 
         if hasattr(self, patch_name):
             raise Exception(f"patch {path_type} has a conflicting name {patch_name}.")

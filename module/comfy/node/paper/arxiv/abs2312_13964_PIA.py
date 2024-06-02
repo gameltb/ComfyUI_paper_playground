@@ -46,7 +46,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
         return {
             "required": {
                 "base_pipeline": ("DIFFUSERS_PIPELINE",),
-                "pia_unet_name": (path_tool.get_model_filename_list(__name__, "pia"),),
+                "pia_unet_name": (path_tool.get_data_path_file_list(__name__, "pia"),),
             },
             "optional": {
                 "dreambooth_pipeline": ("DIFFUSERS_PIPELINE",),
@@ -59,7 +59,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
     CATEGORY = "playground/arxiv/abs2312_13964"
 
     def build_pipeline(self, base_pipeline, pia_unet_name, dreambooth_pipeline=None):
-        pia_unet_path = path_tool.get_model_full_path(__name__, "pia", pia_unet_name)
+        pia_unet_path = path_tool.get_data_path(__name__, "pia", pia_unet_name)
         diffusers_pipeline: StableDiffusionPipeline = base_pipeline
 
         unet_additional_kwargs = {

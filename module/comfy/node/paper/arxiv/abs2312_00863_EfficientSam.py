@@ -8,7 +8,7 @@ from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
-from ....node.utils_image_annotate import ImageAnnotateType
+from ...utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, MaskType, gen_widget
 
@@ -49,7 +49,7 @@ def load_efficient_sam(
     config: Annotated[dict, ComboWidget(choices=EFFICIENT_SAM_CONFIG)] = "efficient_sam_vitt",
 ) -> tuple[EfficientSamModelType]:
     config = config.copy()
-    ckpt_path = os.path.join(path_tool.get_paper_repo_path(__name__), config.pop("checkpoint"))
+    ckpt_path = path_tool.get_paper_repo_path(__name__, config.pop("checkpoint"))
 
     model = build_efficient_sam(**config).eval()
 

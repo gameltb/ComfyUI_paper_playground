@@ -1,4 +1,5 @@
 import os
+from functools import cache
 
 import folder_paths
 
@@ -7,34 +8,56 @@ PLAYGROUND_MODEL_PATH = os.path.join(folder_paths.models_dir, "playground")
 REPO_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 
 
-def get_model_dir(self_name, key=""):
-    if ".node." in self_name:
-        sub_key = self_name.split("node.")[-1]
-    elif ".paper." in self_name:
-        sub_key = self_name.split("module.")[-1]
-    sub_path = os.path.join(*sub_key.split("."), key)
-    full_path = os.path.join(PLAYGROUND_MODEL_PATH, sub_path)
-    return full_path
+def _split_abs_memo(file_name: str):
+    return file_name[:13], file_name[13:]
 
 
-def get_model_filename_list(self_name, key=""):
-    sub_key = self_name.split("node.")[-1]
-    sub_path = os.path.join(*sub_key.split("."), key)
-    full_path = os.path.join(PLAYGROUND_MODEL_PATH, sub_path)
+@cache
+def _gen_abs_map(dir_path: str):
+    abs_map = {}
+    for file_name in os.listdir(dir_path):
+        if file_name.startswith("abs"):
+            file_base_name = file_name.split(".")[0]
+            abs_str, memo = _split_abs_memo(file_base_name)
+            abs_map[abs_str] = file_base_name
+    return abs_map
+
+
+@cache
+def _gen_sub_path_list_from_module_name(module_name: str):
+    if "module.comfy.node." in module_name:
+        sub_key = module_name.split("node.")[-1]
+    elif "module.paper." in module_name:
+        sub_key = module_name.split("module.")[-1]
+    else:
+        raise NotImplementedError()
+    return sub_key.split(".")
+
+
+def get_data_path(self_name, *paths):
+    sub_paths = _gen_sub_path_list_from_module_name(self_name)
+    _replace_abs_memo(sub_paths, PLAYGROUND_MODEL_PATH)
+    return os.path.join(PLAYGROUND_MODEL_PATH, *sub_paths, *paths)
+
+
+def _replace_abs_memo(sub_paths, root_path):
+    if "arxiv" in sub_paths:
+        arxiv_index = sub_paths.index("arxiv")
+        abs_str, memo = _split_abs_memo(sub_paths[arxiv_index + 1])
+        abs_map = _gen_abs_map(os.path.join(root_path, *sub_paths[: arxiv_index + 1]))
+        if abs_str in abs_map:
+            sub_paths[arxiv_index + 1] = abs_map[abs_str]
+
+
+def get_data_path_file_list(self_name, *paths):
+    full_path = get_data_path(self_name, *paths)
     return os.listdir(full_path)
 
 
-def get_model_full_path(self_name, key, filename):
-    sub_key = self_name.split("node.")[-1]
-    sub_path = os.path.join(*sub_key.split("."), key)
-    return os.path.join(PLAYGROUND_MODEL_PATH, sub_path, filename)
-
-
-def get_paper_repo_path(self_name):
-    sub_key = self_name.split("node.")[-1]
-    sub_path = os.path.join(*sub_key.split("."))
-    full_path = os.path.join(REPO_ROOT_PATH, sub_path)
-    return full_path
+def get_paper_repo_path(self_name, *paths):
+    sub_paths = _gen_sub_path_list_from_module_name(self_name)
+    _replace_abs_memo(sub_paths, REPO_ROOT_PATH)
+    return os.path.join(REPO_ROOT_PATH, *sub_paths, *paths)
 
 
 def get_output_path(save_path):

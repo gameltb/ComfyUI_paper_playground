@@ -137,6 +137,8 @@ Refer to the README.
 ```bash
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install "git+https://github.com/open-mmlab/mmcv.git@1.x"
+cd module/paper/arxiv/abs2403_17934_AiOS/models/aios/ops
+python setup.py build_ext --inplace
 ```
 
 ```text

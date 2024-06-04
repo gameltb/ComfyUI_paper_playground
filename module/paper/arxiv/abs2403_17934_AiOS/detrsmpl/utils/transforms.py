@@ -3,7 +3,7 @@ from typing import Union
 import numpy
 import torch
 
-from detrsmpl.core.conventions.joints_mapping.standard_joint_angles import (
+from ..core.conventions.joints_mapping.standard_joint_angles import (
     TRANSFORMATION_AA_TO_SJA,
     TRANSFORMATION_SJA_TO_AA,
 )

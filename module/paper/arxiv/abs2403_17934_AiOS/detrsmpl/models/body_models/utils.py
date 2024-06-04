@@ -1,6 +1,6 @@
 import numpy as np
 
-from detrsmpl.utils.transforms import aa_to_rotmat, rotmat_to_aa
+from ...utils.transforms import aa_to_rotmat, rotmat_to_aa
 
 
 def transform_to_camera_frame(global_orient, transl, pelvis, extrinsic):

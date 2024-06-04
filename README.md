@@ -130,6 +130,29 @@ Put model in https://huggingface.co/shinehugging/oms-diffusion to `ComfyUI/model
 
 ## [Boosting Image Matting with Pretrained Plain Vision Transformers](https://github.com/hustvl/ViTMatte)
 
+## [AiOS: All-in-One-Stage Expressive Human Pose and Shape Estimation](https://github.com/ttxskk/AiOS)
+
+Refer to the README.
+
+```bash
+pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+pip install "git+https://github.com/open-mmlab/mmcv.git@1.x"
+```
+
+```text
+ComfyUI/models/playground/paper/
+└── arxiv
+    ├── abs2403_17934
+        └── smplx
+    |       ├──MANO_SMPLX_vertex_ids.pkl
+    |       ├──SMPL-X__FLAME_vertex_ids.npy
+    |       ├──SMPLX_NEUTRAL.pkl
+    |       ├──SMPLX_to_J14.pkl
+    |       ├──SMPLX_NEUTRAL.npz
+    |       ├──SMPLX_MALE.npz
+    |       └──SMPLX_FEMALE.npz
+        └── aios_checkpoint.pth
+```
 
 # github
 

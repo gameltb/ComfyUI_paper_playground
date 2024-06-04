@@ -5,7 +5,7 @@ import torch
 from mmcv.runner import load_checkpoint
 from torch import Tensor, nn
 
-from detrsmpl.utils.transforms import (
+from ....utils.transforms import (
     aa_to_rotmat,
     rot6d_to_rotmat,
     rotmat_to_aa,

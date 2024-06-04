@@ -3,7 +3,6 @@ import numpy as np
 import scipy
 from config.config import cfg
 from torch.nn import functional as F
-import torchgeometry as tgm
 
 
 def cam2pixel(cam_coord, f, c):
@@ -121,6 +120,8 @@ def transform_joint_to_other_db_batch(src_joint, src_name, dst_name):
 
 
 def rot6d_to_axis_angle(x):
+    import torchgeometry as tgm
+
     batch_size = x.shape[0]
 
     x = x.view(-1, 3, 2)

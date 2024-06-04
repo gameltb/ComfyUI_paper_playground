@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import torch
 
-from detrsmpl.utils.transforms import aa_to_rotmat
+from ...utils.transforms import aa_to_rotmat
 
 train_datasets = ['h36m', 'mpi_inf_3dhp', 'lsp', 'lspet', 'mpii', 'coco']
 static_fits_load_dir = 'data/static_fits'

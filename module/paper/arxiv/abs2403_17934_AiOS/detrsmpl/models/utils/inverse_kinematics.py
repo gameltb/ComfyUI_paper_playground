@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 import torch
 
-from detrsmpl.utils.transforms import aa_to_rotmat
+from ...utils.transforms import aa_to_rotmat
 
 
 def batch_inverse_kinematics_transform(pose_skeleton,

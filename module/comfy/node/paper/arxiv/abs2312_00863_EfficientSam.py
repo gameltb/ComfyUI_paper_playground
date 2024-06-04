@@ -8,9 +8,9 @@ from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
-from ...utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, MaskType, gen_widget
+from ...utils_image_annotate import ImageAnnotateType
 
 EfficientSamModelType = Annotated[EfficientSam, gen_widget("EFFICIENT_SAM_MODEL")]
 

@@ -7,8 +7,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from detrsmpl.core.conventions.keypoints_mapping import convert_kps
-from detrsmpl.utils.transforms import (
+from ...core.conventions.keypoints_mapping import convert_kps
+from ...utils.transforms import (
     aa_to_rotmat,
     make_homegeneous_rotmat_batch,
 )

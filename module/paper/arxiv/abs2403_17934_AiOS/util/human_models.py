@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import os.path as osp
-from config.config import cfg
+# from ..config.config import cfg
 from .smplx import smplx
 import pickle
 
@@ -255,5 +255,5 @@ class SMPL(object):
         self.joint_regressor_male = self.layer['male'].J_regressor.numpy(
         ).astype(np.float32)
 
-smpl_x = SMPLX()
-smpl = SMPL()
+# smpl_x = SMPLX()
+# smpl = SMPL()

@@ -13,3 +13,5 @@ open_clip_torch
 kornia
 
 trimesh
+
+smplx

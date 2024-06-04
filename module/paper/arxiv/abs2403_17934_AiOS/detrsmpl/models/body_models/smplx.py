@@ -6,11 +6,11 @@ from smplx import SMPLX as _SMPLX
 from smplx import SMPLXLayer as _SMPLXLayer
 from smplx.lbs import vertices2joints
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ...core.conventions.keypoints_mapping import (
     convert_kps,
     get_keypoint_num,
 )
-from detrsmpl.core.conventions.segmentation import body_segmentation
+from ...core.conventions.segmentation import body_segmentation
 
 
 class SMPLX(_SMPLX):

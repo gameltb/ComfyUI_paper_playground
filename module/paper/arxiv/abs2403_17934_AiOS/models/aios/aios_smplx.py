@@ -7,9 +7,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch import Tensor
-from util import box_ops
-from util.keypoint_ops import keypoint_xyzxyz_to_xyxyzz
-from util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
+from ...util import box_ops
+from ...util.keypoint_ops import keypoint_xyzxyz_to_xyxyzz
+from ...util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
                        get_world_size, interpolate,
                        is_dist_avail_and_initialized, inverse_sigmoid)
 from .backbones import build_backbone
@@ -22,16 +22,16 @@ from .postprocesses import PostProcess_SMPLX_Multi_Box
 from .postprocesses import  PostProcess_SMPLX_Multi_Infer, PostProcess_SMPLX_Multi_Infer_Box
 from .criterion_smplx import SetCriterion, SetCriterion_Box
 from ..registry import MODULE_BUILD_FUNCS
-from detrsmpl.core.conventions.keypoints_mapping import convert_kps
-from detrsmpl.models.body_models.builder import build_body_model
-from util.human_models import smpl_x
-from detrsmpl.core.conventions.keypoints_mapping import get_keypoint_idxs_by_part
+from ...detrsmpl.core.conventions.keypoints_mapping import convert_kps
+from ...detrsmpl.models.body_models.builder import build_body_model
+# from ...util.human_models import smpl_x
+from ...detrsmpl.core.conventions.keypoints_mapping import get_keypoint_idxs_by_part
 import numpy as np
 
-from detrsmpl.utils.geometry import (rot6d_to_rotmat)
-from detrsmpl.utils.transforms import rotmat_to_aa
-import cv2
-from config.config import cfg
+from ...detrsmpl.utils.geometry import (rot6d_to_rotmat)
+from ...detrsmpl.utils.transforms import rotmat_to_aa
+# import cv2
+# from ...config.config import cfg
 
 
 class AiOSSMPLX(nn.Module):
@@ -123,16 +123,16 @@ class AiOSSMPLX(nn.Module):
         # build human body
         # if train:
         #     self.body_model = build_body_model(body_model)
-        if inference:
-            body_model=dict(
-                type='smplx',
-                keypoint_src='smplx',
-                num_expression_coeffs=10,
-                num_betas=10,
-                keypoint_dst='smplx',
-                model_path='data/body_models/smplx',
-                use_pca=False,
-                use_face_contour=True)
+        # if inference:
+        #     body_model=dict(
+        #         type='smplx',
+        #         keypoint_src='smplx',
+        #         num_expression_coeffs=10,
+        #         num_betas=10,
+        #         keypoint_dst='smplx',
+        #         model_path='data/body_models/smplx',
+        #         use_pca=False,
+        #         use_face_contour=True)
         self.body_model = build_body_model(body_model)
         for param in self.body_model.parameters():
             param.requires_grad = False       
@@ -1049,7 +1049,7 @@ class AiOSSMPLX(nn.Module):
             })
         return outputs_class, outputs_coord, outputs_keypoint
 
-    def forward(self, data_batch: NestedTensor, targets: List = None):
+    def forward(self, data_batch: NestedTensor, cfg, targets: List = None):
         """The forward expects a NestedTensor, which consists of:
 
            - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
@@ -1067,7 +1067,7 @@ class AiOSSMPLX(nn.Module):
         """
 
         if isinstance(data_batch, dict):
-            samples, targets = self.prepare_targets(data_batch)
+            samples, targets = self.prepare_targets(data_batch, cfg)
             # import pdb; pdb.set_trace()
         elif isinstance(data_batch, (list, torch.Tensor)):
             samples = nested_tensor_from_tensor_list(data_batch)
@@ -1105,6 +1105,10 @@ class AiOSSMPLX(nn.Module):
             assert targets is None
             input_query_bbox = input_query_label = attn_mask = attn_mask2 = attn_mask3 = mask_dict = None
 
+        if attn_mask2 is not None:
+            attn_mask2 = attn_mask2.to(samples.device)
+        if attn_mask3 is not None:
+            attn_mask3 = attn_mask3.to(samples.device)
 
         hs, reference, hs_enc, ref_enc, init_box_proposal = self.transformer(
             srcs, masks, input_query_bbox, poss, input_query_label, attn_mask,
@@ -2009,7 +2013,7 @@ class AiOSSMPLX(nn.Module):
             outputs_smpl_cam[:-1], 
             outputs_smpl_kp3d[:-1])]
 
-    def prepare_targets(self, data_batch):
+    def prepare_targets(self, data_batch, cfg):
 
         data_batch_coco = []
         instance_dict = {}
@@ -2188,7 +2192,7 @@ class AiOSSMPLX(nn.Module):
 def build_aios_smplx(args, cfg):
     # pdb.set_trace()
     num_classes = args.num_classes  # 2
-    device = torch.device(args.device)
+    # device = torch.device(args.device)
 
     backbone = build_backbone(args)
 
@@ -2425,14 +2429,15 @@ def build_aios_smplx(args, cfg):
         num_face_points=args.num_face_points,
         )
 
-    criterion.to(device)
+    # criterion.to(device)
     if args.inference:
         postprocessors = {
             'bbox': 
                 PostProcess_SMPLX_Multi_Infer(
                     num_select=args.num_select, 
                     nms_iou_threshold=args.nms_iou_threshold,
-                    num_body_points=args.num_body_points),
+                    num_body_points=args.num_body_points,
+                    body_model=args.body_model_post_process),
         }
     else:
         postprocessors = {
@@ -2440,7 +2445,8 @@ def build_aios_smplx(args, cfg):
                 PostProcess_SMPLX(
                     num_select=args.num_select, 
                     nms_iou_threshold=args.nms_iou_threshold,
-                    num_body_points=args.num_body_points),
+                    num_body_points=args.num_body_points,
+                    body_model=args.body_model_post_process),
         }
     postprocessors_aios = {
         'bbox':

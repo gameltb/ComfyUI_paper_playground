@@ -7,7 +7,6 @@ from einops import rearrange
 
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2404_07206.pipeline import GoodDragger
-from ...utils_image_annotate import ImageAnnotateType
 from ....registry import register_node
 from ....types import (
     BoolType,
@@ -20,6 +19,7 @@ from ....types import (
     StringType,
 )
 from ...diffusers import DiffusersPipelineType
+from ...utils_image_annotate import ImageAnnotateType
 
 
 def preprocess_image(image, device):

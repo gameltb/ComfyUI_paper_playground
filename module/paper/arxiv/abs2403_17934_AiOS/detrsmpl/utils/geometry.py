@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from torch.nn import functional as F
-import torchgeometry as tgm
 
 def batch_rodrigues(theta):
     """Convert axis-angle representation to rotation matrix.
@@ -72,6 +71,8 @@ def rot6d_to_rotmat(x):
     return torch.stack((b1, b2, b3), dim=-1)
 
 def rot6d_to_axis_angle(x):
+    import torchgeometry as tgm
+
     batch_size = x.shape[0]
 
     x = x.view(-1, 3, 2)

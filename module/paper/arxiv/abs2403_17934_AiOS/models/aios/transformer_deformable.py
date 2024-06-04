@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
 
-from util.misc import inverse_sigmoid
+# from util.misc import inverse_sigmoid
 from .ops.modules import MSDeformAttn
 
 from .utils import sigmoid_focal_loss, MLP, _get_activation_fn, gen_sineembed_for_position

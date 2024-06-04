@@ -8,18 +8,18 @@ import torch.nn.functional as F
 from torch import nn
 from torchvision.ops.boxes import nms
 from torch import Tensor
-from pycocotools.coco import COCO
-from util import box_ops
-from util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
+# from pycocotools.coco import COCO
+from ...util import box_ops
+from ...util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
                        get_world_size, interpolate,
                        is_dist_avail_and_initialized, inverse_sigmoid)
-from detrsmpl.utils.demo_utils import convert_verts_to_cam_coord, xywh2xyxy, xyxy2xywh
+from ...detrsmpl.utils.demo_utils import convert_verts_to_cam_coord, xywh2xyxy, xyxy2xywh
 import numpy as np
-from detrsmpl.core.conventions.keypoints_mapping import convert_kps
-from detrsmpl.models.body_models.builder import build_body_model
-from detrsmpl.utils.geometry import batch_rodrigues, project_points, weak_perspective_projection,project_points_new
-from util.human_models import smpl_x
-from detrsmpl.core.conventions.keypoints_mapping import get_keypoint_idx
+from ...detrsmpl.core.conventions.keypoints_mapping import convert_kps
+from ...detrsmpl.models.body_models.builder import build_body_model
+from ...detrsmpl.utils.geometry import batch_rodrigues, project_points, weak_perspective_projection,project_points_new
+# from ...util.human_models import smpl_x
+# from ...detrsmpl.core.conventions.keypoints_mapping import get_keypoint_idx
 class PostProcess(nn.Module):
     """This module converts the model's output into the format expected by the
     coco api."""
@@ -1233,7 +1233,7 @@ class PostProcess_SMPLX_Multi_Infer(nn.Module):
         for bs in range(batch_size):
             out_kp3d_i = out_smpl_kp3d[bs]
             out_cam_i = out_smpl_cam[bs]
-            out_img_shape = data_batch_nc['img_shape'][bs].flip(-1)[None]
+            out_img_shape = torch.Tensor(data_batch_nc['img_shape'][bs]).flip(-1)[None]
 
             out_kp2d_i = project_points_new(
                 points_3d=out_kp3d_i,

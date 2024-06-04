@@ -4,11 +4,11 @@ import torch
 import torch.nn.functional as F
 from smplx.utils import find_joint_kin_chain
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ...core.conventions.keypoints_mapping import (
     get_keypoint_idx,
     get_keypoint_idxs_by_part,
 )
-from detrsmpl.utils.geometry import weak_perspective_projection
+from ...utils.geometry import weak_perspective_projection
 
 
 class SMPLXHandMergeFunc():

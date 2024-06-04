@@ -3,7 +3,7 @@ import torch
 from smplx import MANO as _MANO
 from smplx import MANOLayer as _MANOLayer
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ...core.conventions.keypoints_mapping import (
     convert_kps,
     get_keypoint_num,
 )

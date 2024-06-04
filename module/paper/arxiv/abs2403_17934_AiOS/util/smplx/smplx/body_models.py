@@ -30,7 +30,6 @@ from .utils import (Struct, to_np, to_tensor, Tensor, Array, SMPLOutput,
                     SMPLHOutput, SMPLXOutput, MANOOutput, FLAMEOutput,
                     find_joint_kin_chain)
 from .vertex_joint_selector import VertexJointSelector
-from config.config import cfg
 
 
 class SMPL(nn.Module):

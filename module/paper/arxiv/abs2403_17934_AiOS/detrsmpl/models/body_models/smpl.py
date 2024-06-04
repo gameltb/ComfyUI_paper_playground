@@ -7,13 +7,13 @@ import torch
 from smplx import SMPL as _SMPL
 from smplx.lbs import batch_rigid_transform, blend_shapes, vertices2joints
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ...core.conventions.keypoints_mapping import (
     convert_kps,
     get_keypoint_num,
 )
-from detrsmpl.core.conventions.segmentation import body_segmentation
-from detrsmpl.models.utils import batch_inverse_kinematics_transform
-from detrsmpl.utils.transforms import quat_to_rotmat
+from ...core.conventions.segmentation import body_segmentation
+from ...models.utils import batch_inverse_kinematics_transform
+from ...utils.transforms import quat_to_rotmat
 
 
 class SMPL(_SMPL):

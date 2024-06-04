@@ -7,18 +7,18 @@ import torch.nn.functional as F
 from torch import nn
 from torchvision.ops.boxes import nms
 from torch import Tensor
-from util import box_ops
-from util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
+from ...util import box_ops
+from ...util.misc import (NestedTensor, nested_tensor_from_tensor_list, accuracy,
                        get_world_size, interpolate,
                        is_dist_avail_and_initialized, inverse_sigmoid)
 from .utils import PoseProjector, sigmoid_focal_loss, MLP, OKSLoss
 from typing import Optional, Union
-from detrsmpl.core.conventions.keypoints_mapping import (get_keypoint_idx,
-                                                         convert_kps)
-from detrsmpl.utils.geometry import (batch_rodrigues, project_points_new)
-from config.config import cfg
-from util.human_models import smpl_x
-from detrsmpl.utils.transforms import rotmat_to_aa
+# from detrsmpl.core.conventions.keypoints_mapping import (get_keypoint_idx,
+#                                                          convert_kps)
+# from detrsmpl.utils.geometry import (batch_rodrigues, project_points_new)
+# from config.config import cfg
+# from ...util.human_models import smpl_x
+# from detrsmpl.utils.transforms import rotmat_to_aa
 class SetCriterion(nn.Module):
     def __init__(self,
                  num_classes,

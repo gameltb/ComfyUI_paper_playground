@@ -193,6 +193,17 @@ body_model_train = \
         model_path='data/body_models/smplx',
         use_pca=False,
         use_face_contour=True)
+body_model_post_process = \
+    dict(
+        type='smplx',
+        keypoint_src='smplx',
+        num_expression_coeffs=10,
+        num_betas=10,
+        gender='neutral',
+        keypoint_dst='smplx_137',
+        model_path='data/body_models/smplx',
+        use_pca=False,
+        use_face_contour=True)
 
 # will be update in exp
 exp_name = 'output/exp52/dataset_debug'

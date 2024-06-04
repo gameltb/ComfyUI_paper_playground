@@ -3,7 +3,7 @@ import copy
 import os
 from typing import Optional, List, Union
 import warnings
-from util.misc import inverse_sigmoid
+from ...util.misc import inverse_sigmoid
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor

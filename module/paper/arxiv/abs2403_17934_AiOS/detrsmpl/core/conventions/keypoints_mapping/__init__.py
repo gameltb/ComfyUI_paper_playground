@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from mmcv.utils import print_log
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ....core.conventions.keypoints_mapping import (
     agora,
     coco,
     coco_wholebody,

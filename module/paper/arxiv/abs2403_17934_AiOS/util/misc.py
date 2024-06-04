@@ -2,7 +2,7 @@
 
 Mostly copy-paste from torchvision references.
 """
-from mmcv.runner import get_dist_info, init_dist
+# from mmcv.runner import get_dist_info, init_dist
 import os
 import random
 import subprocess

@@ -1,10 +1,9 @@
 import numpy as np
 import cv2
 import random
-from config.config import cfg
 import math
-from .human_models import smpl_x, smpl
-from .transforms import cam2pixel, transform_joint_to_other_db, transform_joint_to_other_db_batch
+# from .human_models import smpl_x, smpl
+# from .transforms import cam2pixel, transform_joint_to_other_db, transform_joint_to_other_db_batch
 from plyfile import PlyData, PlyElement
 import torch
 
@@ -175,7 +174,7 @@ def get_aug_config(data_name):
     # ])
     return scale, rot, color_scale, do_flip, crop_hw, sample_ratio, sample_prob
 
-def augmentation_keep_size(img, bbox, data_split):
+def augmentation_keep_size(img, bbox, data_split, cfg):
     ori_shape = img.shape[:2][::-1]
     if getattr(cfg, 'no_aug', False) and data_split == 'train':
         scale, rot, color_scale, do_flip,size,crop = 1.0, 0.0, np.array([1, 1, 1]), False, ori_shape, np.array([1,1])

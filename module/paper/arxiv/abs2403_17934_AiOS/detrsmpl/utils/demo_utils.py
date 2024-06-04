@@ -10,7 +10,7 @@ import numpy as np
 from mmcv import Timer
 from scipy import interpolate
 
-from detrsmpl.core.post_processing import build_post_processing
+from ..core.post_processing import build_post_processing
 
 try:
     from typing import Literal

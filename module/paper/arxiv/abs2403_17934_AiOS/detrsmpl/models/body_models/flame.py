@@ -3,7 +3,7 @@ import torch
 from smplx import FLAME as _FLAME
 from smplx import FLAMELayer as _FLAMELayer
 
-from detrsmpl.core.conventions.keypoints_mapping import (
+from ...core.conventions.keypoints_mapping import (
     convert_kps,
     get_keypoint_num,
 )

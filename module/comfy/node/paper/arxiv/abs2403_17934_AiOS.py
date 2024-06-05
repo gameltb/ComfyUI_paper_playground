@@ -251,3 +251,13 @@ def aios_to_string(
     aios_frame: AiOSFrameType,
 ) -> tuple[StringType]:
     return (np_dumps(aios_frame),)
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+# reset logging level set by mmcv/utils/logging.py#50.
+for handler in logger.root.handlers:
+    if type(handler) is logging.StreamHandler:
+        handler.setLevel(logging.NOTSET)

@@ -72,3 +72,13 @@ def get_output_path(save_path):
 
 def get_local_huggingface_path(repo_id):
     return os.path.join(HUGGINGFACE_MODEL_PATH, repo_id)
+
+
+def gen_default_category_path_by_module_name(self_name):
+    sub_paths = _gen_sub_path_list_from_module_name(self_name)
+    if "arxiv" in sub_paths:
+        arxiv_index = sub_paths.index("arxiv")
+        abs_str, memo = _split_abs_memo(sub_paths[arxiv_index + 1])
+        return f"arxiv/{abs_str} ({memo.lstrip('_')})"
+    else:
+        raise NotImplementedError()

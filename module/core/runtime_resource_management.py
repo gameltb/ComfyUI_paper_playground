@@ -13,6 +13,8 @@ resources_device = torch.device
 
 
 class AutoManage:
+    auto_manage_type_wrapper_map = {}
+
     def __init__(
         self,
         obj,
@@ -28,16 +30,17 @@ class AutoManage:
         if not isinstance(obj, ResourcesUser):
             user = ResourcesManagement.find_user(obj)
             if user is None:
-                if isinstance(obj, torch.nn.Module):
-                    user = TorchModuleWrapper(obj, device_strategy)
-                elif isinstance(obj, diffusers.DiffusionPipeline):
-                    user = DiffusersPipelineWrapper(obj, device_strategy)
-                else:
-                    raise NotImplementedError()
-                ResourcesManagement.add_user(user)
-            obj = user
-        assert isinstance(obj, ResourcesUser)
-        self.user = obj
+                for tp, wrapper_cls in self.auto_manage_type_wrapper_map.items():
+                    if isinstance(obj, tp):
+                        user = wrapper_cls(obj, device_strategy)
+                        ResourcesManagement.add_user(user)
+                        break
+            if user is None:
+                raise NotImplementedError()
+        else:
+            user = obj
+        assert user is not None
+        self.user = user
         self.set_inference_memory_size(inference_memory_size)
         self.set_user_context(kwargs)
 
@@ -64,6 +67,12 @@ class AutoManage:
     def set_user_context(self, user_context):
         self.user_context = user_context
         self.user.update_user_context(user_context)
+
+    @classmethod
+    def registe_type_wrapper(cls, tp, wrapper_cls):
+        if tp in cls.auto_manage_type_wrapper_map:
+            raise RuntimeError(f"type {tp} registed with {cls.auto_manage_type_wrapper_map[tp]}")
+        cls.auto_manage_type_wrapper_map[tp] = wrapper_cls
 
 
 class AutoManageHook(ModelHook):
@@ -217,6 +226,9 @@ class TorchModuleWrapper(WeakRefResourcesUser):
         return module_mem
 
 
+AutoManage.registe_type_wrapper(torch.nn.Module, TorchModuleWrapper)
+
+
 class DiffusersPipelineWrapper(WeakRefResourcesUser):
     def __init__(self, pipeline: diffusers.DiffusionPipeline, device_strategy: DeviceStrategy) -> None:
         super().__init__()
@@ -260,6 +272,9 @@ class DiffusersPipelineWrapper(WeakRefResourcesUser):
             if isinstance(comp, torch.nn.Module):
                 pipe_mem += TorchModuleWrapper.module_size(comp)
         return pipe_mem
+
+
+AutoManage.registe_type_wrapper(diffusers.DiffusionPipeline, DiffusersPipelineWrapper)
 
 
 class ResourcesManagement:

@@ -1,11 +1,14 @@
 import comfy.utils
 import torch
 
+from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_02145.marigold import MarigoldPipeline
 from ....registry import register_node
 from ....types import ComboWidget
 from ...diffusers import DiffusersPipelineType, diffusers_from_pretrained_cls, get_diffusers_folder_paths
+
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
 
 def resize_max_res(img, max_edge_resolution: int):
@@ -22,7 +25,7 @@ def resize_max_res(img, max_edge_resolution: int):
 @register_node(
     identifier="Abs2312_02145_DiffusersPipelineFromPretrained",
     display_name="Abs 2312.02145 Diffusers Pipeline From Pretrained (Marigold)",
-    category="arxiv/abs2312_02145",
+    category=DEFAULT_CATEGORY,
 )
 def abs2312_02145_from_pretrained(
     directory: ComboWidget(choices=lambda: get_diffusers_folder_paths()) = None,
@@ -48,7 +51,7 @@ class Abs2312_02145_DiffusersPipelineSampler:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "do_pipeline"
 
-    CATEGORY = "playground/arxiv/abs2312_02145"
+    CATEGORY = f"playground/{DEFAULT_CATEGORY}"
 
     def do_pipeline(
         self,

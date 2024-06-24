@@ -5,11 +5,13 @@ import numpy as np
 import torch
 from transformers import VitMatteForImageMatting, VitMatteImageProcessor
 
-from .....common import file_get_tool
+from .....common import file_get_tool, path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
 from ....types import ImageType, IntType, MaskType, gen_widget
+
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
 
 def generate_trimap(mask, erode_kernel_size=10, dilate_kernel_size=10):
@@ -46,7 +48,7 @@ class VitMattePipeline(PlaygroundPipeline):
 VitMattePipelineType = Annotated[VitMattePipeline, gen_widget("VIT_MATTE_PIPELINE")]
 
 
-@register_node(category="arxiv/abs2305_15272")
+@register_node(category=DEFAULT_CATEGORY)
 def load_vit_matte_pipeline() -> tuple[VitMattePipelineType]:
     local_path = file_get_tool.find_or_download_huggingface_repo(
         [
@@ -60,7 +62,7 @@ def load_vit_matte_pipeline() -> tuple[VitMattePipelineType]:
     return (VitMattePipeline(processor, model),)
 
 
-@register_node(category="arxiv/abs2305_15272")
+@register_node(category=DEFAULT_CATEGORY)
 def run_vit_matte_pipeline(
     vit_matte_pipeline: VitMattePipelineType,
     image: ImageType,

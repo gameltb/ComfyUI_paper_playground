@@ -31,6 +31,8 @@ from ....types import (
     new_widget,
 )
 
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
+
 
 class DynamiCrafterPipeline(PlaygroundPipeline):
     def __init__(self, model: LatentVisualDiffusion) -> None:
@@ -247,7 +249,7 @@ DYNAMI_CRAFTER_CONFIG_FILES = {
 }
 
 
-@register_node(category="arxiv/abs2310_12190")
+@register_node(category=DEFAULT_CATEGORY)
 def load_dynami_crafter(
     ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_data_path_file_list(__name__))],
     dynami_crafter_config: Annotated[str, ComboWidget(choices=DYNAMI_CRAFTER_CONFIG_FILES)] = "inference_512_v1.0.yaml",
@@ -268,7 +270,7 @@ def load_dynami_crafter(
     return (DynamiCrafterPipeline(model),)
 
 
-@register_node(category="arxiv/abs2310_12190")
+@register_node(category=DEFAULT_CATEGORY)
 def run_dynami_crafter(
     dynami_crafter_pipeline: DynamiCrafterPipelineType,
     seed: IntSeedType,

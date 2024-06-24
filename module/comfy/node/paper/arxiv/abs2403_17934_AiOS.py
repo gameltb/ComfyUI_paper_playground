@@ -18,6 +18,8 @@ from .....utils.json import np_dumps
 from ....registry import register_node
 from ....types import ImageType, StringType, gen_widget
 
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
+
 
 class Normalize(object):
     """Normalize the image.
@@ -149,7 +151,7 @@ AiOSPipelineType = Annotated[AiOSPipeline, gen_widget("AIOS_PIPELINE")]
 AiOSFrameType = Annotated[dict, gen_widget("AIOS_FRAME")]
 
 
-@register_node(category="arxiv/abs2403_17934_AiOS")
+@register_node(category=DEFAULT_CATEGORY)
 def load_aios() -> tuple[AiOSPipelineType]:
     model_path = file_get_tool.find_or_download_file(
         [
@@ -209,7 +211,7 @@ def load_aios() -> tuple[AiOSPipelineType]:
     return (AiOSPipeline(model, criterion, postprocessors, postprocessors_aios),)
 
 
-@register_node(category="arxiv/abs2403_17934_AiOS")
+@register_node(category=DEFAULT_CATEGORY)
 def run_aios(pipeline: AiOSPipelineType, image: ImageType) -> tuple[AiOSFrameType, ImageType]:
     img = image[0].numpy() * 255
     ori_img = img[:, :, ::-1]
@@ -246,7 +248,7 @@ def run_aios(pipeline: AiOSPipelineType, image: ImageType) -> tuple[AiOSFrameTyp
     return (result, torch.Tensor(bbox_img[0][:, :, ::-1].copy()).unsqueeze(0))
 
 
-@register_node(category="arxiv/abs2403_17934_AiOS")
+@register_node(category=DEFAULT_CATEGORY)
 def aios_to_string(
     aios_frame: AiOSFrameType,
 ) -> tuple[StringType]:

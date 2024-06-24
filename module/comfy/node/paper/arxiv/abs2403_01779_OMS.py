@@ -8,7 +8,6 @@ from diffusers import StableDiffusionPipeline, UNet2DConditionModel, UniPCMultis
 from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2403_01779 import pipelines
-from .....paper.arxiv.abs2403_01779.garment_seg.process import generate_mask, load_seg_model
 from .....paper.arxiv.abs2403_01779.utils.utils import is_torch2_available, prepare_image, prepare_mask
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
@@ -29,11 +28,10 @@ from ...diffusers import (
     DiffusersPipelineType,
 )
 
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
+
 if is_torch2_available():
     from .....paper.arxiv.abs2403_01779.garment_adapter.attention_processor import AttnProcessor2_0 as AttnProcessor
-    from .....paper.arxiv.abs2403_01779.garment_adapter.attention_processor import (
-        REFAnimateDiffAttnProcessor2_0 as REFAnimateDiffAttnProcessor,
-    )
     from .....paper.arxiv.abs2403_01779.garment_adapter.attention_processor import (
         REFAttnProcessor2_0 as REFAttnProcessor,
     )
@@ -162,7 +160,7 @@ class OmsDiffusionPipeline(PlaygroundPipeline):
 OmsDiffusionPipelineType = Annotated[OmsDiffusionPipeline, gen_widget("OMS_DIFFUSION_PIPELINE")]
 
 
-@register_node(category="arxiv/abs2403_01779")
+@register_node(category=DEFAULT_CATEGORY)
 def load_oms_diffusion(
     diffusers_pipeline: DiffusersPipelineType,
     ckpt_path: Annotated[str, ComboWidget(choices=lambda: path_tool.get_data_path_file_list(__name__))],
@@ -172,7 +170,7 @@ def load_oms_diffusion(
     return (OmsDiffusionPipeline.from_base_pipeline(diffusers_pipeline, ckpt_path),)
 
 
-@register_node(category="arxiv/abs2403_01779")
+@register_node(category=DEFAULT_CATEGORY)
 def run_oms_diffusers(
     oms_pipeline: OmsDiffusionPipelineType,
     seed: IntSeedType,

@@ -25,10 +25,12 @@ from ....types import (
 )
 from ...plyfile import PlyDataType
 
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
+
 LGMPipelineType = Annotated[LGMPipeline, gen_widget("LGM_PIPELINE")]
 
 
-@register_node(category="arxiv/abs2402_05054")
+@register_node(category=DEFAULT_CATEGORY)
 def load_lgm(
     lgb_config: Annotated[str, ComboWidget(choices=["big", "default", "small", "tiny"])] = "big",
 ) -> tuple[LGMPipelineType]:
@@ -54,7 +56,7 @@ def load_lgm(
     return (LGMPipeline(lgm_model),)
 
 
-@register_node(category="arxiv/abs2402_05054")
+@register_node(category=DEFAULT_CATEGORY)
 def run_lgm(
     lgm_pipeline: LGMPipelineType,
     image: ImageType,
@@ -66,7 +68,7 @@ def run_lgm(
 LGMMvdreamPipelineType = Annotated[MVDreamPipeline, gen_widget("LGM_MVDREAM_PIPELINE")]
 
 
-@register_node(category="arxiv/abs2402_05054")
+@register_node(category=DEFAULT_CATEGORY)
 def load_lgm_mvdream() -> tuple[LGMMvdreamPipelineType]:
     model_path = file_get_tool.find_or_download_huggingface_repo(
         [
@@ -85,7 +87,7 @@ def load_lgm_mvdream() -> tuple[LGMMvdreamPipelineType]:
     return (lgm_mvdream_model,)
 
 
-@register_node(category="arxiv/abs2402_05054")
+@register_node(category=DEFAULT_CATEGORY)
 def run_lgm_mvdream(
     lgm_mvdream_pipeline: LGMMvdreamPipelineType,
     image: ImageType,

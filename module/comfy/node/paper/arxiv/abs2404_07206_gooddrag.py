@@ -1,10 +1,11 @@
 import os
-from typing import Annotated, List
+from typing import List
 
 import torch
 import torch.nn.functional as F
 from einops import rearrange
 
+from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2404_07206.pipeline import GoodDragger
 from ....registry import register_node
@@ -20,6 +21,8 @@ from ....types import (
 )
 from ...diffusers import DiffusersPipelineType
 from ...utils_image_annotate import ImageAnnotateType
+
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
 
 def preprocess_image(image, device):
@@ -60,7 +63,7 @@ def get_original_points(
     return original_handle_points
 
 
-@register_node(category="arxiv/abs2404_07206")
+@register_node(category=DEFAULT_CATEGORY)
 def run_gooddrag(
     diffusers_pipeline: DiffusersPipelineType,
     image: ImageType,

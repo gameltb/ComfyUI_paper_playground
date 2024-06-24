@@ -12,6 +12,8 @@ from .....paper.arxiv.abs2312_13964.animatediff.models.unet import UNet3DConditi
 from .....paper.arxiv.abs2312_13964.animatediff.pipelines import I2VPipeline
 from ....registry import register_node
 
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
+
 
 def UNet3DConditionModel_from_unet_2d(unet_2d: UNet2DConditionModel, unet_additional_kwargs):
     config = copy.deepcopy(unet_2d.config)
@@ -56,7 +58,7 @@ class Abs2312_13964_DiffusersPipelineBuild:
     RETURN_TYPES = ("DIFFUSERS_PIPELINE",)
     FUNCTION = "build_pipeline"
 
-    CATEGORY = "playground/arxiv/abs2312_13964"
+    CATEGORY = f"playground/{DEFAULT_CATEGORY}"
 
     def build_pipeline(self, base_pipeline, pia_unet_name, dreambooth_pipeline=None):
         pia_unet_path = path_tool.get_data_path(__name__, "pia", pia_unet_name)
@@ -166,7 +168,7 @@ class Abs2312_13964_DiffusersPipelineSampler:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "do_pipeline"
 
-    CATEGORY = "playground/arxiv/abs2312_13964"
+    CATEGORY = f"playground/{DEFAULT_CATEGORY}"
 
     def do_pipeline(
         self,

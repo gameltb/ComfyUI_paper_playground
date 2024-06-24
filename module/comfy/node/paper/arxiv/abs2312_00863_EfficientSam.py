@@ -1,4 +1,3 @@
-import os
 from typing import Annotated
 
 import comfy.utils
@@ -11,6 +10,8 @@ from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import Efficient
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, MaskType, gen_widget
 from ...utils_image_annotate import ImageAnnotateType
+
+DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
 EfficientSamModelType = Annotated[EfficientSam, gen_widget("EFFICIENT_SAM_MODEL")]
 
@@ -44,7 +45,7 @@ def parse_annotate(annotates: ImageAnnotateType):
     return input_points, input_labels
 
 
-@register_node(category="arxiv/abs2312_00863")
+@register_node(category=DEFAULT_CATEGORY)
 def load_efficient_sam(
     config: Annotated[dict, ComboWidget(choices=EFFICIENT_SAM_CONFIG)] = "efficient_sam_vitt",
 ) -> tuple[EfficientSamModelType]:
@@ -59,7 +60,7 @@ def load_efficient_sam(
     return (model,)
 
 
-@register_node(category="arxiv/abs2312_00863")
+@register_node(category=DEFAULT_CATEGORY)
 def run_efficient_sam(
     efficient_sam_model: EfficientSamModelType,
     image: ImageType,

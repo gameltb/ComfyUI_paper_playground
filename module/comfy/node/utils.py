@@ -13,7 +13,7 @@ def string_box(string: StringMultilineType) -> tuple[StringType]:
 
 @register_node(identifier="ShowString", category="utils", output=True)
 def show_string(string: Annotated[StringType, new_widget(StringType, is_forceInput=True)]):
-    return ReturnType(ui={"string": [string]})
+    return ReturnType(ui={"string": [str(string)]})
 
 
 @register_node(identifier="GeneratePlaygroundNodeDocumentation", category="utils", output=True)

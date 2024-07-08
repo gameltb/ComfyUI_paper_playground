@@ -1,4 +1,5 @@
 from .module.comfy import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+from .module.comfy.server import GLOBAL_UUID_RESOURCE_POOL
 
 WEB_DIRECTORY = "web"
 

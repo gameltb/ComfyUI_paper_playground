@@ -29,3 +29,8 @@ except Exception:
 #     from . import profile
 # except Exception:
 #     traceback.print_exc()
+
+# try:
+#     from . import inference_memory_size_tool
+# except Exception:
+#     traceback.print_exc()

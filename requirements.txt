@@ -1,4 +1,4 @@
-diffusers >= 0.29.0
+diffusers >= 0.30.0
 omegaconf
 accelerate
 pydantic

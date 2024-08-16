@@ -33,62 +33,7 @@ DIFFUSERS_PIPELINE_CLASS_MAP = {}
 DIFFUSERS_MODEL_CLASS_MAP = {}
 DIFFUSERS_SCHEDULER_CLASS_MAP = {}
 
-
-# copy from inspect.py with catch RuntimeError from diffusers
-def _getmembers(object, predicate, getter):
-    import types
-
-    results = []
-    processed = set()
-    names = dir(object)
-    if inspect.isclass(object):
-        mro = inspect.getmro(object)
-        # add any DynamicClassAttributes to the list of names if object is a class;
-        # this may result in duplicate entries if, for example, a virtual
-        # attribute with the same name as a DynamicClassAttribute exists
-        try:
-            for base in object.__bases__:
-                for k, v in base.__dict__.items():
-                    if isinstance(v, types.DynamicClassAttribute):
-                        names.append(k)
-        except AttributeError:
-            pass
-    else:
-        mro = ()
-    for key in names:
-        # First try to get the value via getattr.  Some descriptors don't
-        # like calling their __get__ (see bug #1785), so fall back to
-        # looking in the __dict__.
-        try:
-            value = getter(object, key)
-            # handle the duplicate key
-            if key in processed:
-                raise AttributeError
-        except AttributeError:
-            for base in mro:
-                if key in base.__dict__:
-                    value = base.__dict__[key]
-                    break
-            else:
-                # could be a (currently) missing slot member, or a buggy
-                # __dir__; discard and move on
-                continue
-        except RuntimeError:
-            continue
-        if not predicate or predicate(value):
-            results.append((key, value))
-        processed.add(key)
-    results.sort(key=lambda pair: pair[0])
-    return results
-
-
-def getmembers(object, predicate=None):
-    """Return all members of an object as (name, value) pairs sorted by name.
-    Optionally, only return members that satisfy a given predicate."""
-    return _getmembers(object, predicate, getattr)
-
-
-clsmembers = getmembers(diffusers, inspect.isclass)
+clsmembers = inspect.getmembers(diffusers, inspect.isclass)
 
 for cls_name, cls in clsmembers:
     if issubclass(cls, diffusers.DiffusionPipeline):

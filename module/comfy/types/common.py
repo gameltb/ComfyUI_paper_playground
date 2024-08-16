@@ -18,6 +18,8 @@ class ComfyWidgetType(BaseModel):
     TYPE: ClassVar
     input_type: ComfyWidgetInputType = ComfyWidgetInputType.REQUIRED
     forceInput: bool = True
+    lazy: bool = False
+    tooltip: Optional[str] = None
 
     def opts(self):
         return self.model_dump(mode="python", exclude_none=True)

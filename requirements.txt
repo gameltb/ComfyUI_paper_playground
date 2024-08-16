@@ -2,6 +2,7 @@ diffusers >= 0.29.0
 omegaconf
 accelerate
 pydantic
+docstring_parser
 
 # for lgm
 roma

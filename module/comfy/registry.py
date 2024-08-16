@@ -3,6 +3,8 @@ import re
 import typing
 from functools import wraps
 
+from docstring_parser import DocstringParam, parse
+
 from .types import ComfyWidgetInputType, ReturnType, find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
@@ -14,6 +16,7 @@ PACK_UID = None
 
 class NodeTemplate:
     _FUNCTION_SIG: inspect.Signature = None
+    _DESCRIPTION_INPUT: dict[str, DocstringParam] = None
     FUNCTION = "exec"
 
     @classmethod
@@ -31,6 +34,9 @@ class NodeTemplate:
 
             if v.default is not inspect._empty:
                 opts["default"] = v.default
+
+            if comfy_widget.tooltip is None and cls._DESCRIPTION_INPUT is not None:
+                opts["tooltip"] = cls._DESCRIPTION_INPUT.get(k, None)
 
             tp = comfy_widget.type
             if input_type not in input_types:
@@ -61,7 +67,9 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
             node_attrs = {}
             node_attrs["OUTPUT_NODE"] = output
             if f.__doc__ is not None:
-                node_attrs["DESCRIPTION"] = f.__doc__.strip()
+                parse_doc = parse(f.__doc__)
+                node_attrs["_DESCRIPTION_INPUT"] = {p.arg_name: p.description for p in parse_doc.params}
+                node_attrs["DESCRIPTION"] = parse_doc.description
 
             sig = inspect.signature(f)
             node_attrs["_FUNCTION_SIG"] = sig
@@ -71,7 +79,7 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                 return_annotation = tuple()
             elif isinstance(return_annotation, tuple):
                 pass
-            elif typing.get_origin(return_annotation) == tuple:
+            elif typing.get_origin(return_annotation) is tuple:
                 return_annotation = typing.get_args(return_annotation)
             else:
                 print(f"WARNING: Unknow object {return_annotation} for RETURN_TYPES.")

@@ -1,15 +1,22 @@
 from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Optional, Union
 
 from pydantic import BaseModel
+from enum import StrEnum
 
 REGISTERED_TYPES = set()
+
+
+class ComfyWidgetInputType(StrEnum):
+    REQUIRED = "required"
+    OPTIONAL = "optional"
+    HIDDEN = "hidden"
 
 
 class ComfyWidgetType(BaseModel):
     """Base type for ComfyUI types that have options controlling how they are displayed."""
 
     TYPE: ClassVar
-    required: bool = True
+    input_type: ComfyWidgetInputType = ComfyWidgetInputType.REQUIRED
     forceInput: bool = True
 
     def opts(self):
@@ -37,12 +44,21 @@ def find_comfy_widget_type_annotation(tp: Union[Annotated, ComfyWidgetType]) -> 
     return None
 
 
-def gen_widget(type_str: str, is_required: bool = True, is_forceInput: bool = True):
+def gen_widget(
+    type_str: str,
+    is_required: bool = True,
+    is_forceInput: bool = True,
+    widget_input_type: Optional[ComfyWidgetInputType] = None,
+):
     """gen simple widget."""
 
     class Widget(ComfyWidgetType):
         TYPE = type_str
-        required: bool = is_required
+        input_type: ComfyWidgetInputType = (
+            widget_input_type
+            if widget_input_type is not None
+            else (ComfyWidgetInputType.REQUIRED if is_required else ComfyWidgetInputType.OPTIONAL)
+        )
         forceInput: bool = is_forceInput
 
     return Widget()
@@ -50,7 +66,11 @@ def gen_widget(type_str: str, is_required: bool = True, is_forceInput: bool = Tr
 
 def new_widget(tp, is_required: bool = True, is_forceInput: bool = True, **kwargs):
     return find_comfy_widget_type_annotation(tp).model_copy(
-        update={"required": is_required, "forceInput": is_forceInput, **kwargs}
+        update={
+            "input_type": ComfyWidgetInputType.REQUIRED if is_required else ComfyWidgetInputType.OPTIONAL,
+            "forceInput": is_forceInput,
+            **kwargs,
+        }
     )
 
 

@@ -3,7 +3,7 @@ import re
 import typing
 from functools import wraps
 
-from .types import ReturnType, find_comfy_widget_type_annotation
+from .types import ComfyWidgetInputType, ReturnType, find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -18,22 +18,24 @@ class NodeTemplate:
 
     @classmethod
     def INPUT_TYPES(cls):
-        input_types = {"required": {}, "optional": {}}
+        input_types = {}
         for k, v in cls._FUNCTION_SIG.parameters.items():
             comfy_widget = find_comfy_widget_type_annotation(v.annotation)
 
             assert comfy_widget is not None
-            assert comfy_widget.required or v.default is not inspect._empty
+            assert comfy_widget.input_type is not ComfyWidgetInputType.OPTIONAL or v.default is not inspect._empty
 
             opts = {}
-            req = "required" if comfy_widget.required else "optional"
+            input_type = comfy_widget.input_type.value
             opts = comfy_widget.opts()
 
             if v.default is not inspect._empty:
                 opts["default"] = v.default
 
             tp = comfy_widget.type
-            input_types[req][k] = (tp, opts)
+            if input_type not in input_types:
+                input_types[input_type] = {}
+            input_types[input_type][k] = (tp, opts)
         return input_types
 
 

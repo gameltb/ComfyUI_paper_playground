@@ -1,13 +1,14 @@
-from typing import Annotated, Any, TypedDict, Union
+from typing import Annotated, Any, Optional, TypedDict, Union
 
 import comfy.clip_vision
 import comfy.controlnet
 import comfy.model_patcher
 import comfy.sd
+import comfy_execution.graph
 import torch
 from pydantic import BaseModel
 
-from .common import gen_widget
+from .common import ComfyWidgetInputType, gen_widget
 
 MaskType = Annotated[torch.Tensor, gen_widget("MASK")]
 """Tensor [B,H,W] 0~1"""
@@ -62,7 +63,25 @@ ControlNetType = Annotated[
     gen_widget("CONTROL_NET"),
 ]
 
+PromptType = Annotated[
+    dict,
+    gen_widget("PROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
+]
+DynPromptType = Annotated[
+    comfy_execution.graph.DynamicPrompt,
+    gen_widget("DYNPROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
+]
+ExtraPnginfoType = Annotated[
+    Optional[dict],
+    gen_widget("EXTRA_PNGINFO", widget_input_type=ComfyWidgetInputType.HIDDEN),
+]
+UniqueIdType = Annotated[
+    str,
+    gen_widget("UNIQUE_ID", widget_input_type=ComfyWidgetInputType.HIDDEN),
+]
 
-class ReturnType(BaseModel):
-    ui: dict[str, list[Any]] = dict()
-    result: tuple = tuple()
+
+class ReturnType(BaseModel, arbitrary_types_allowed=True):
+    ui: Optional[dict[str, list[Any]]] = None
+    expand: Optional[dict] = None
+    result: Union[tuple, comfy_execution.graph.ExecutionBlocker] = tuple()

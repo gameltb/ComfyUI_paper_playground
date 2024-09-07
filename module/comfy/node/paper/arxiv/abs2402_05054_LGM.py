@@ -21,13 +21,13 @@ from ....types import (
     IntType,
     MaskType,
     StringMultilineType,
-    gen_widget,
+    make_widget,
 )
 from ...plyfile import PlyDataType
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
-LGMPipelineType = Annotated[LGMPipeline, gen_widget("LGM_PIPELINE")]
+LGMPipelineType = Annotated[LGMPipeline, make_widget("LGM_PIPELINE")]
 
 
 @register_node(category=DEFAULT_CATEGORY)
@@ -65,7 +65,7 @@ def run_lgm(
     return (lgm_pipeline(input_image),)
 
 
-LGMMvdreamPipelineType = Annotated[MVDreamPipeline, gen_widget("LGM_MVDREAM_PIPELINE")]
+LGMMvdreamPipelineType = Annotated[MVDreamPipeline, make_widget("LGM_MVDREAM_PIPELINE")]
 
 
 @register_node(category=DEFAULT_CATEGORY)

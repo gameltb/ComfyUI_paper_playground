@@ -26,7 +26,7 @@ from ..types import (
     SigmasType,
     StringMultilineType,
     StringType,
-    gen_widget,
+    make_widget,
 )
 
 DIFFUSERS_PIPELINE_CLASS_MAP = {}
@@ -94,12 +94,12 @@ def get_diffusers_ip_adapter_paths():
     return paths
 
 
-DiffusersPipelineType = Annotated[DiffusionPipeline, gen_widget("DIFFUSERS_PIPELINE")]
+DiffusersPipelineType = Annotated[DiffusionPipeline, make_widget("DIFFUSERS_PIPELINE")]
 DiffusersComponentType = Annotated[
-    Union[diffusers.ModelMixin, diffusers.SchedulerMixin], gen_widget("DIFFUSERS_COMPONENT")
+    Union[diffusers.ModelMixin, diffusers.SchedulerMixin], make_widget("DIFFUSERS_COMPONENT")
 ]
-DiffusersLoRAType = Annotated[dict[str, torch.Tensor], gen_widget("DIFFUSERS_LORA")]
-MetaDiffusersPipelineType = Annotated[DiffusionPipeline, gen_widget("META_DIFFUSERS_PIPELINE")]
+DiffusersLoRAType = Annotated[dict[str, torch.Tensor], make_widget("DIFFUSERS_LORA")]
+MetaDiffusersPipelineType = Annotated[DiffusionPipeline, make_widget("META_DIFFUSERS_PIPELINE")]
 """Diffusers Pipeline without weights, make it deepcopy able."""
 
 

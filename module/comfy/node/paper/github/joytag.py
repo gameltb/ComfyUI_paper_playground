@@ -11,7 +11,7 @@ from .....core.runtime_resource_management import AutoManage
 from .....paper.github.joytag.Models import VisionModel
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
-from ....types import FloatPercentageType, ImageType, StringType, gen_widget
+from ....types import FloatPercentageType, ImageType, StringType, make_widget
 
 
 class JoytagPipeline(PlaygroundPipeline):
@@ -44,7 +44,7 @@ class JoytagPipeline(PlaygroundPipeline):
         return tag_string, scores
 
 
-JoytagPipelineType = Annotated[JoytagPipeline, gen_widget("JOYTAG_PIPELINE")]
+JoytagPipelineType = Annotated[JoytagPipeline, make_widget("JOYTAG_PIPELINE")]
 
 
 def prepare_image(image: Image.Image, target_size: int) -> torch.Tensor:

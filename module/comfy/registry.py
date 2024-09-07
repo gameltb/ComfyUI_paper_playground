@@ -1,11 +1,10 @@
 import inspect
 import re
 import typing
-from functools import wraps
 
-from docstring_parser import DocstringParam, parse
+from docstring_parser import parse
 
-from .types import ComfyWidgetInputType, ReturnType, find_comfy_widget_type_annotation
+from .types import ComfyWidgetInputType, ComfyWidgetType, ReturnType, find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -15,34 +14,37 @@ PACK_UID = None
 
 
 class NodeTemplate:
-    _FUNCTION_SIG: inspect.Signature = None
-    _DESCRIPTION_INPUT: dict[str, DocstringParam] = None
+    _COMFY_WIDGET_MAP: dict[str, ComfyWidgetType] = None
+    _WARP_FUNCTION: typing.Callable = None
     FUNCTION = "exec"
 
     @classmethod
     def INPUT_TYPES(cls):
         input_types = {}
-        for k, v in cls._FUNCTION_SIG.parameters.items():
-            comfy_widget = find_comfy_widget_type_annotation(v.annotation)
-
-            assert comfy_widget is not None
-            assert comfy_widget.input_type is not ComfyWidgetInputType.OPTIONAL or v.default is not inspect._empty
-
+        for k, comfy_widget in cls._COMFY_WIDGET_MAP.items():
             opts = {}
             input_type = comfy_widget.input_type.value
             opts = comfy_widget.opts()
 
-            if v.default is not inspect._empty:
-                opts["default"] = v.default
-
-            if comfy_widget.tooltip is None and cls._DESCRIPTION_INPUT is not None:
-                opts["tooltip"] = cls._DESCRIPTION_INPUT.get(k, None)
-
-            tp = comfy_widget.type
+            tp_str = comfy_widget.type
             if input_type not in input_types:
                 input_types[input_type] = {}
-            input_types[input_type][k] = (tp, opts)
+            input_types[input_type][k] = (tp_str, opts)
         return input_types
+
+    @classmethod
+    def exec(cls, **kwargs):
+        for k, v in kwargs.items():
+            comfy_widget = cls._COMFY_WIDGET_MAP.get(k, None)
+            if comfy_widget is not None:
+                # Look up Combo value from mapping
+                kwargs[k] = comfy_widget[v]
+        results = cls._WARP_FUNCTION(**kwargs)
+        if results is None:
+            results = {}
+        elif isinstance(results, ReturnType):
+            results = results.model_dump()
+        return results
 
 
 def set_pack_options(uid: str, category: str = None):
@@ -66,13 +68,33 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
         if inspect.isfunction(f):
             node_attrs = {}
             node_attrs["OUTPUT_NODE"] = output
-            if f.__doc__ is not None:
-                parse_doc = parse(f.__doc__)
-                node_attrs["_DESCRIPTION_INPUT"] = {p.arg_name: p.description for p in parse_doc.params}
-                node_attrs["DESCRIPTION"] = parse_doc.description
 
             sig = inspect.signature(f)
-            node_attrs["_FUNCTION_SIG"] = sig
+
+            input_description = None
+            if f.__doc__ is not None:
+                parse_doc = parse(f.__doc__)
+                input_description = {p.arg_name: p.description for p in parse_doc.params}
+                node_attrs["DESCRIPTION"] = parse_doc.description
+
+            comfy_widget_map = {}
+            for k, v in sig.parameters.items():
+                comfy_widget = find_comfy_widget_type_annotation(v.annotation)
+
+                assert comfy_widget is not None
+                assert comfy_widget.input_type is not ComfyWidgetInputType.OPTIONAL or v.default is not inspect._empty
+
+                opts = {}
+
+                if v.default is not inspect._empty:
+                    opts["default"] = v.default
+
+                if comfy_widget.tooltip is None and input_description is not None:
+                    opts["tooltip"] = input_description.get(k, None)
+
+                comfy_widget_map[k] = comfy_widget.model_copy(update=opts)
+
+            node_attrs["_COMFY_WIDGET_MAP"] = comfy_widget_map
 
             return_annotation = sig.return_annotation
             if return_annotation == inspect._empty or return_annotation is None:
@@ -82,7 +104,7 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
             elif typing.get_origin(return_annotation) is tuple:
                 return_annotation = typing.get_args(return_annotation)
             else:
-                print(f"WARNING: Unknow object {return_annotation} for RETURN_TYPES.")
+                raise Exception(f"WARNING: Unknow object {return_annotation} for RETURN_TYPES.")
 
             node_attrs["RETURN_TYPES"] = tuple(find_comfy_widget_type_annotation(x).type for x in return_annotation)
 
@@ -98,21 +120,7 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                     f"WARNING: No category specified for {node_identifier} and no base category. It won't be shown in menus."
                 )
 
-            @wraps(f)
-            def exec(**kwargs):
-                for k, v in kwargs.items():
-                    comfy_widget_type_annotation = find_comfy_widget_type_annotation(sig.parameters[k].annotation)
-                    if comfy_widget_type_annotation is not None:
-                        # Look up Combo value from mapping
-                        kwargs[k] = comfy_widget_type_annotation[v]
-                results = f(**kwargs)
-                if results is None:
-                    results = {}
-                elif isinstance(results, ReturnType):
-                    results = results.model_dump()
-                return results
-
-            node_attrs["exec"] = staticmethod(exec)
+            node_attrs["_WARP_FUNCTION"] = f
             node_class = type(unique_name, (NodeTemplate,), node_attrs)
         elif inspect.isclass(f):
             node_class = f

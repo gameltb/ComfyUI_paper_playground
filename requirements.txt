@@ -16,3 +16,13 @@ kornia
 trimesh
 
 smplx
+
+# for MeshAnythingV2
+scikit-image
+mesh2sdf
+
+# for magi
+shapely
+
+# for Florence 2
+flash_attn

@@ -8,12 +8,12 @@ from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
 from ....registry import register_node
-from ....types import ComboWidget, ImageType, MaskType, gen_widget
+from ....types import ComboWidget, ImageType, MaskType, make_widget
 from ...utils_image_annotate import ImageAnnotateType
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
-EfficientSamModelType = Annotated[EfficientSam, gen_widget("EFFICIENT_SAM_MODEL")]
+EfficientSamModelType = Annotated[EfficientSam, make_widget("EFFICIENT_SAM_MODEL")]
 
 EFFICIENT_SAM_CONFIG = {
     "efficient_sam_vitt": {

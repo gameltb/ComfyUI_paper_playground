@@ -8,12 +8,12 @@ import comfy_execution.graph
 import torch
 from pydantic import BaseModel
 
-from .common import ComfyWidgetInputType, gen_widget
+from .common import ComfyWidgetInputType, make_widget
 
-MaskType = Annotated[torch.Tensor, gen_widget("MASK")]
+MaskType = Annotated[torch.Tensor, make_widget("MASK")]
 """Tensor [B,H,W] 0~1"""
 
-ImageType = Annotated[torch.Tensor, gen_widget("IMAGE")]
+ImageType = Annotated[torch.Tensor, make_widget("IMAGE")]
 """Tensor [B,H,W,C] 0~1"""
 
 
@@ -26,16 +26,16 @@ class LatentTypeDict(TypedDict, total=False):
     """[B,C,H,W] 0~1"""
 
 
-LatentType = Annotated[LatentTypeDict, gen_widget("LATENT")]
+LatentType = Annotated[LatentTypeDict, make_widget("LATENT")]
 """samples batch_index noise_mask"""
 
-VaeType = Annotated[comfy.sd.VAE, gen_widget("VAE")]
+VaeType = Annotated[comfy.sd.VAE, make_widget("VAE")]
 
-ModelType = Annotated[comfy.model_patcher.ModelPatcher, gen_widget("MODEL")]
+ModelType = Annotated[comfy.model_patcher.ModelPatcher, make_widget("MODEL")]
 
-SigmasType = Annotated[torch.Tensor, gen_widget("SIGMAS")]
+SigmasType = Annotated[torch.Tensor, make_widget("SIGMAS")]
 
-ClipType = Annotated[comfy.sd.CLIP, gen_widget("CLIP")]
+ClipType = Annotated[comfy.sd.CLIP, make_widget("CLIP")]
 
 
 class ConditioningAttrTypeDict(TypedDict, total=False):
@@ -53,31 +53,31 @@ class ConditioningAttrTypeDict(TypedDict, total=False):
     prompt_type: str
 
 
-ConditioningType = Annotated[list[tuple[torch.Tensor, ConditioningAttrTypeDict]], gen_widget("CONDITIONING")]
+ConditioningType = Annotated[list[tuple[torch.Tensor, ConditioningAttrTypeDict]], make_widget("CONDITIONING")]
 """list of [cond, cond_attr_dict] """
 
-ClipVisionType = Annotated[comfy.clip_vision.ClipVisionModel, gen_widget("CLIP_VISION")]
+ClipVisionType = Annotated[comfy.clip_vision.ClipVisionModel, make_widget("CLIP_VISION")]
 
 ControlNetType = Annotated[
     Union[comfy.controlnet.ControlLora, comfy.controlnet.ControlNet, comfy.controlnet.T2IAdapter],
-    gen_widget("CONTROL_NET"),
+    make_widget("CONTROL_NET"),
 ]
 
 PromptType = Annotated[
     dict,
-    gen_widget("PROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
+    make_widget("PROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
 ]
 DynPromptType = Annotated[
     comfy_execution.graph.DynamicPrompt,
-    gen_widget("DYNPROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
+    make_widget("DYNPROMPT", widget_input_type=ComfyWidgetInputType.HIDDEN),
 ]
 ExtraPnginfoType = Annotated[
     Optional[dict],
-    gen_widget("EXTRA_PNGINFO", widget_input_type=ComfyWidgetInputType.HIDDEN),
+    make_widget("EXTRA_PNGINFO", widget_input_type=ComfyWidgetInputType.HIDDEN),
 ]
 UniqueIdType = Annotated[
     str,
-    gen_widget("UNIQUE_ID", widget_input_type=ComfyWidgetInputType.HIDDEN),
+    make_widget("UNIQUE_ID", widget_input_type=ComfyWidgetInputType.HIDDEN),
 ]
 
 

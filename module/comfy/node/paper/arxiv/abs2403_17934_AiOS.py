@@ -16,7 +16,7 @@ from .....paper.arxiv.abs2403_17934_AiOS.util.preprocessing import augmentation_
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from .....utils.json import np_dumps
 from ....registry import register_node
-from ....types import ImageType, StringType, gen_widget
+from ....types import ImageType, StringType, make_widget
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
@@ -147,8 +147,8 @@ class AiOSPipeline(PlaygroundPipeline):
         return output, output_img
 
 
-AiOSPipelineType = Annotated[AiOSPipeline, gen_widget("AIOS_PIPELINE")]
-AiOSFrameType = Annotated[dict, gen_widget("AIOS_FRAME")]
+AiOSPipelineType = Annotated[AiOSPipeline, make_widget("AIOS_PIPELINE")]
+AiOSFrameType = Annotated[dict, make_widget("AIOS_FRAME")]
 
 
 @register_node(category=DEFAULT_CATEGORY)

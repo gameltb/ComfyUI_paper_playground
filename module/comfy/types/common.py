@@ -1,7 +1,7 @@
+from enum import StrEnum
 from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Optional, Union
 
 from pydantic import BaseModel
-from enum import StrEnum
 
 REGISTERED_TYPES = set()
 
@@ -20,6 +20,7 @@ class ComfyWidgetType(BaseModel):
     forceInput: bool = True
     lazy: bool = False
     tooltip: Optional[str] = None
+    default: Optional[object] = None
 
     def opts(self):
         return self.model_dump(mode="python", exclude_none=True)
@@ -32,7 +33,7 @@ class ComfyWidgetType(BaseModel):
         return item
 
     def __init_subclass__(cls):
-        assert cls.TYPE not in REGISTERED_TYPES
+        assert cls.TYPE not in REGISTERED_TYPES, f"Registered type {cls.TYPE}"
         REGISTERED_TYPES.add(cls.TYPE)
 
 
@@ -40,19 +41,30 @@ def find_comfy_widget_type_annotation(tp: Union[Annotated, ComfyWidgetType]) -> 
     if isinstance(tp, ComfyWidgetType):
         return tp
     elif hasattr(tp, "__metadata__"):
+        comfy_widget = None
+        build_kwargs_list: list[slice] = []
         for meta in reversed(tp.__metadata__):
             if isinstance(meta, ComfyWidgetType):
-                return meta
+                comfy_widget = meta
+                break
+            elif type(meta) is slice:
+                build_kwargs_list.append(meta)
+        if comfy_widget is not None:
+            build_kwargs = {}
+            for build_kwarg in reversed(build_kwargs_list):
+                build_kwargs[build_kwarg.start] = build_kwarg.stop
+            comfy_widget.model_copy(update=build_kwargs)
+        return comfy_widget
     return None
 
 
-def gen_widget(
+def make_widget(
     type_str: str,
     is_required: bool = True,
     is_forceInput: bool = True,
     widget_input_type: Optional[ComfyWidgetInputType] = None,
 ):
-    """gen simple widget."""
+    """make simple widget."""
 
     class Widget(ComfyWidgetType):
         TYPE = type_str

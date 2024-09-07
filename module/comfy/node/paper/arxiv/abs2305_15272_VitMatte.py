@@ -9,7 +9,7 @@ from .....common import file_get_tool, path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
-from ....types import ImageType, IntType, MaskType, gen_widget
+from ....types import ImageType, IntType, MaskType, make_widget
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
@@ -45,7 +45,7 @@ class VitMattePipeline(PlaygroundPipeline):
         return alphas
 
 
-VitMattePipelineType = Annotated[VitMattePipeline, gen_widget("VIT_MATTE_PIPELINE")]
+VitMattePipelineType = Annotated[VitMattePipeline, make_widget("VIT_MATTE_PIPELINE")]
 
 
 @register_node(category=DEFAULT_CATEGORY)

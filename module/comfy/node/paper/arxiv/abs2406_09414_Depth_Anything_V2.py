@@ -23,7 +23,7 @@ from ....registry import register_node
 from ....types import (
     ComboWidget,
     ImageType,
-    gen_widget,
+    make_widget,
 )
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
@@ -72,8 +72,8 @@ class DepthAnythingV2Pipeline(PlaygroundPipeline):
         return depth
 
 
-DepthAnythingV2PipelineType = Annotated[DepthAnythingV2Pipeline, gen_widget("DEPTH_ANYTHING_V2_PIPELINE")]
-DepthAnythingV2DepthType = Annotated[torch.Tensor, gen_widget("DEPTH_ANYTHING_V2_DEPTH")]
+DepthAnythingV2PipelineType = Annotated[DepthAnythingV2Pipeline, make_widget("DEPTH_ANYTHING_V2_PIPELINE")]
+DepthAnythingV2DepthType = Annotated[torch.Tensor, make_widget("DEPTH_ANYTHING_V2_DEPTH")]
 """Tensor [B,H,W]"""
 
 model_configs = {

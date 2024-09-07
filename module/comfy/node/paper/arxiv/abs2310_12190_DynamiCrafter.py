@@ -27,7 +27,7 @@ from ....types import (
     IntType,
     IntWidget,
     StringMultilineType,
-    gen_widget,
+    make_widget,
     new_widget,
 )
 
@@ -241,7 +241,7 @@ class DynamiCrafterPipeline(PlaygroundPipeline):
         return z
 
 
-DynamiCrafterPipelineType = Annotated[DynamiCrafterPipeline, gen_widget("DYNAMI_CRAFTER_PIPELINE")]
+DynamiCrafterPipelineType = Annotated[DynamiCrafterPipeline, make_widget("DYNAMI_CRAFTER_PIPELINE")]
 
 DYNAMI_CRAFTER_CONFIG_PATH = path_tool.get_paper_repo_path(__name__, "configs")
 DYNAMI_CRAFTER_CONFIG_FILES = {

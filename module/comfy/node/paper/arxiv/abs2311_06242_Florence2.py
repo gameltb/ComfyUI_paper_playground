@@ -12,7 +12,7 @@ from .....common import file_get_tool, path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from ....registry import register_node
-from ....types import ComboWidget, ImageType, IntType, StringMultilineType, StringType, gen_widget
+from ....types import ComboWidget, ImageType, IntType, StringMultilineType, StringType, make_widget
 
 DEFAULT_CATEGORY = path_tool.gen_default_category_path_by_module_name(__name__)
 
@@ -178,9 +178,9 @@ class Florence2Pipeline(PlaygroundPipeline):
         return parsed_answer
 
 
-Florence2PipelineType = Annotated[Florence2Pipeline, gen_widget("FLORENCE_2_PIPELINE")]
+Florence2PipelineType = Annotated[Florence2Pipeline, make_widget("FLORENCE_2_PIPELINE")]
 
-Florence2ParsedAnswerType = Annotated[dict, gen_widget("FLORENCE_2_PARSED_ANSWER")]
+Florence2ParsedAnswerType = Annotated[dict, make_widget("FLORENCE_2_PARSED_ANSWER")]
 
 
 @register_node(category=DEFAULT_CATEGORY)

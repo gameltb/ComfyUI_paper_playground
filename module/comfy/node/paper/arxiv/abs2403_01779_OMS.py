@@ -21,7 +21,7 @@ from ....types import (
     IntType,
     MaskType,
     StringMultilineType,
-    gen_widget,
+    make_widget,
 )
 from ...diffusers import (
     DIFFUSERS_SCHEDULER_CLASS_MAP,
@@ -157,7 +157,7 @@ class OmsDiffusionPipeline(PlaygroundPipeline):
         return images, cloth_mask_image
 
 
-OmsDiffusionPipelineType = Annotated[OmsDiffusionPipeline, gen_widget("OMS_DIFFUSION_PIPELINE")]
+OmsDiffusionPipelineType = Annotated[OmsDiffusionPipeline, make_widget("OMS_DIFFUSION_PIPELINE")]
 
 
 @register_node(category=DEFAULT_CATEGORY)

@@ -29,7 +29,7 @@ from ..types import (
     ComboWidget,
     ComfyWidgetType,
     StringWidget,
-    gen_widget,
+    make_widget,
     new_widget,
 )  # some base comfyui type
 
@@ -40,7 +40,7 @@ class ExampleWidget(ComfyWidgetType):
 
 ExampleType = Annotated[bool, ExampleWidget()]  # TypeAlias , use as bool
 
-SimpleType = Annotated[str, gen_widget("SIMPLE")]  # Simple TypeAlias without definition Widget, use as str
+SimpleType = Annotated[str, make_widget("SIMPLE")]  # Simple TypeAlias without definition Widget, use as str
 """Simple type doc"""
 
 

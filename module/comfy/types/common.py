@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Annotated, Any, Callable, ClassVar, List, Literal, Mapping, Optional, Union
 
-from pydantic import BaseModel
+from ...core.annotated_model import AnnotatedBaseModel, find_annotated_model
 
 REGISTERED_TYPES = set()
 
@@ -12,7 +12,7 @@ class ComfyWidgetInputType(StrEnum):
     HIDDEN = "hidden"
 
 
-class ComfyWidgetType(BaseModel):
+class ComfyWidget(AnnotatedBaseModel):
     """Base type for ComfyUI types that have options controlling how they are displayed."""
 
     TYPE: ClassVar
@@ -37,25 +37,8 @@ class ComfyWidgetType(BaseModel):
         REGISTERED_TYPES.add(cls.TYPE)
 
 
-def find_comfy_widget_type_annotation(tp: Union[Annotated, ComfyWidgetType]) -> Optional[ComfyWidgetType]:
-    if isinstance(tp, ComfyWidgetType):
-        return tp
-    elif hasattr(tp, "__metadata__"):
-        comfy_widget = None
-        build_kwargs_list: list[slice] = []
-        for meta in reversed(tp.__metadata__):
-            if isinstance(meta, ComfyWidgetType):
-                comfy_widget = meta
-                break
-            elif type(meta) is slice:
-                build_kwargs_list.append(meta)
-        if comfy_widget is not None:
-            build_kwargs = {}
-            for build_kwarg in reversed(build_kwargs_list):
-                build_kwargs[build_kwarg.start] = build_kwarg.stop
-            comfy_widget.model_copy(update=build_kwargs)
-        return comfy_widget
-    return None
+def find_comfy_widget_type_annotation(annotation: Union[Annotated, ComfyWidget]) -> Optional[ComfyWidget]:
+    return find_annotated_model(annotation, model_type=ComfyWidget)
 
 
 def make_widget(
@@ -66,7 +49,7 @@ def make_widget(
 ):
     """make simple widget."""
 
-    class Widget(ComfyWidgetType):
+    class Widget(ComfyWidget):
         TYPE = type_str
         input_type: ComfyWidgetInputType = (
             widget_input_type
@@ -88,7 +71,7 @@ def new_widget(tp, is_required: bool = True, is_forceInput: bool = True, **kwarg
     )
 
 
-class IntWidget(ComfyWidgetType):
+class IntWidget(ComfyWidget):
     TYPE = "INT"
     forceInput: bool = False
     min: int = None
@@ -102,7 +85,7 @@ IntSeedType = Annotated[int, IntWidget(min=0, max=0xFFFFFFFFFFFFFFFF)]
 IntStepsType = Annotated[int, IntWidget(min=1, max=10000)]
 
 
-class FloatWidget(ComfyWidgetType):
+class FloatWidget(ComfyWidget):
     TYPE = "FLOAT"
     forceInput: bool = False
     min: float = None
@@ -118,7 +101,7 @@ FloatPercentageType = Annotated[float, FloatWidget(min=0.0, max=1.0, step=0.01)]
 """0 to 1, step 0.01."""
 
 
-class StringWidget(ComfyWidgetType):
+class StringWidget(ComfyWidget):
     TYPE = "STRING"
     forceInput: bool = False
     multiline: bool = None
@@ -129,7 +112,7 @@ StringType = Annotated[str, StringWidget()]
 StringMultilineType = Annotated[str, StringWidget(multiline=True)]
 
 
-class BoolWidget(ComfyWidgetType):
+class BoolWidget(ComfyWidget):
     TYPE = "BOOLEAN"
     forceInput: bool = False
     label_on: str = None
@@ -139,7 +122,7 @@ class BoolWidget(ComfyWidgetType):
 BoolType = Annotated[bool, BoolWidget()]
 
 
-class ComboWidget(ComfyWidgetType):
+class ComboWidget(ComfyWidget):
     TYPE = "COMBO"
     forceInput: bool = False
     choices: Union[Mapping[str, Any], List[str], Callable[[], Union[Mapping[str, Any], List[str]]]]

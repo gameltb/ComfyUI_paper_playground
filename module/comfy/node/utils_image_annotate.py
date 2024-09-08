@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Annotated, Union
 
 from ..registry import register_node
-from ..types import ComfyWidgetType, ImageType
+from ..types import ComfyWidget, ImageType
 
 
 @dataclass
@@ -21,7 +21,7 @@ class ImageAnnotateCanvasSelect:
     type: int = None
 
 
-class IMAGE_ANNOTATE_Widget(ComfyWidgetType):
+class IMAGE_ANNOTATE_Widget(ComfyWidget):
     TYPE = "IMAGE_ANNOTATE"
     required: bool = True
     forceInput: bool = False

@@ -4,7 +4,7 @@ import typing
 
 from docstring_parser import parse
 
-from .types import ComfyWidgetInputType, ComfyWidgetType, ReturnType, find_comfy_widget_type_annotation
+from .types import ComfyWidget, ComfyWidgetInputType, ReturnType, find_comfy_widget_type_annotation
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -14,7 +14,7 @@ PACK_UID = None
 
 
 class NodeTemplate:
-    _COMFY_WIDGET_MAP: dict[str, ComfyWidgetType] = None
+    _COMFY_WIDGET_MAP: dict[str, ComfyWidget] = None
     _WARP_FUNCTION: typing.Callable = None
     FUNCTION = "exec"
 

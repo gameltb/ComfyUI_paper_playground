@@ -27,14 +27,14 @@ from ..registry import register_node
 from ..types import (
     BoolType,
     ComboWidget,
-    ComfyWidgetType,
+    ComfyWidget,
     StringWidget,
     make_widget,
     new_widget,
 )  # some base comfyui type
 
 
-class ExampleWidget(ComfyWidgetType):
+class ExampleWidget(ComfyWidget):
     TYPE = "EXAMPLE"  # identifier of comfyui type.
 
 

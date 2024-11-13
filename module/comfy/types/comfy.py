@@ -1,14 +1,52 @@
+import typing
 from typing import Annotated, Any, Optional, TypedDict, Union
 
-import comfy.clip_vision
-import comfy.controlnet
-import comfy.model_patcher
-import comfy.sd
-import comfy_execution.graph
+import comfy.samplers
 import torch
 from pydantic import BaseModel
 
 from .common import ComfyWidgetInputType, make_widget
+
+COMFYUI = True
+
+try:
+    import comfy
+except ModuleNotFoundError:
+    COMFYUI = False
+
+if typing.TYPE_CHECKING or COMFYUI:
+    import comfy.clip_vision
+    import comfy.controlnet
+    import comfy.model_patcher
+    import comfy.sd
+    import comfy_execution.graph
+else:
+
+    class comfy:
+        class clip_vision:
+            class ClipVisionModel: ...
+
+        class controlnet:
+            class ControlLora: ...
+
+            class ControlNet: ...
+
+            class T2IAdapter: ...
+
+        class model_patcher:
+            class ModelPatcher: ...
+
+        class sd:
+            class VAE: ...
+
+            class CLIP: ...
+
+    class comfy_execution:
+        class graph:
+            class ExecutionBlocker: ...
+
+            class DynamicPrompt: ...
+
 
 MaskType = Annotated[torch.Tensor, make_widget("MASK")]
 """Tensor [B,H,W] 0~1"""
@@ -34,6 +72,8 @@ VaeType = Annotated[comfy.sd.VAE, make_widget("VAE")]
 ModelType = Annotated[comfy.model_patcher.ModelPatcher, make_widget("MODEL")]
 
 SigmasType = Annotated[torch.Tensor, make_widget("SIGMAS")]
+
+SamplerType = Annotated[comfy.samplers.KSAMPLER, make_widget("SAMPLER")]
 
 ClipType = Annotated[comfy.sd.CLIP, make_widget("CLIP")]
 

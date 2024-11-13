@@ -21,17 +21,10 @@ example node
 
 ```python
 import os
-from typing import Annotated, Optional
+from typing import Annotated, Optional, NamedTuple
 
 from ..registry import register_node
-from ..types import (
-    BoolType,
-    ComboWidget,
-    ComfyWidget,
-    StringWidget,
-    make_widget,
-    new_widget,
-)  # some base comfyui type
+from ..types import BoolType, ComboWidget, ComfyWidget, make_widget, FORCE_INPUT  # some base comfyui type
 
 
 class ExampleWidget(ComfyWidget):
@@ -44,16 +37,20 @@ SimpleType = Annotated[str, make_widget("SIMPLE")]  # Simple TypeAlias without d
 """Simple type doc"""
 
 
+class ExampleReturn(NamedTuple):
+    output1: ExampleType
+    output2: SimpleType
+
+
 @register_node(
     identifier="node_identifier",  # identifier of node. If not provided, it will be generated from the function name.
     display_name="display_name",  # display_name show to user. it will be generated from the identifier.
     category="loaders",  # category under playground.
 )
 def example(
-    widget_input1: StringWidget(),  # use widget instance as type hint , register_node will convert it to an inputType. but it is not valid for programmers.
-    input1: ExampleType,  # use Annotated type , This is the recommended way.
+    input1: ExampleType,  # use Annotated type
     input2: BoolType = True,  # you can set default value.
-    op_input1: Annotated[BoolType, new_widget(BoolType, is_required=False)] = True,  # change widget property,
+    op_input1: Annotated[BoolType, FORCE_INPUT:True] = True,  # change widget property,
     combo_input0: Annotated[
         str, ComboWidget(choices=["int"])
     ] = None,  # use Combo widget to select an item from the list.
@@ -66,8 +63,13 @@ def example(
     combo_input3: Annotated[
         Optional[type], ComboWidget(choices=lambda: {"int": int}, ext_none_choice="none")
     ] = None,  # you can set an extra None option name, which is converted to None when passed in.
-) -> tuple[ExampleType, SimpleType]:  # return type
-    """example node description."""
+) -> ExampleReturn:  # return NamedTuple or use tuple[ExampleType, SimpleType] without name
+    """example node description.
+
+    Args:
+        input1 (ExampleType): input1 tooltip
+        input2 (BoolType): input2 bool tooltip
+    """
     # do what you want.
     # Note: The node caches all input parameters for other or future node executions, so these parameters should be read-only, there are currently no constraints to guarantee this, accidentally modifying the parameter object may result in unexpected behavior, in this case please use the copy or copy method of the object.
     pass

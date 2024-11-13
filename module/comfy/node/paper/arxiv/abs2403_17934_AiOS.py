@@ -1,7 +1,15 @@
+# /// script
+# dependencies = [
+#   "smplx",
+#   "pytorch3d",
+#   "mmcv",
+# ]
+# ///
+
+
 import os
 from typing import Annotated
 
-import comfy.utils
 import mmcv
 import numpy as np
 import torch
@@ -15,6 +23,7 @@ from .....paper.arxiv.abs2403_17934_AiOS.util.formatting import DefaultFormatBun
 from .....paper.arxiv.abs2403_17934_AiOS.util.preprocessing import augmentation_keep_size
 from .....pipelines.playground_pipeline import PlaygroundPipeline
 from .....utils.json import np_dumps
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import ImageType, StringType, make_widget
 
@@ -204,7 +213,7 @@ def load_aios() -> tuple[AiOSPipelineType]:
     build_func = MODULE_BUILD_FUNCS.get(cfg.modelname)
     model, criterion, postprocessors, postprocessors_aios = build_func(cfg, cfg)
 
-    checkpoint = comfy.utils.load_torch_file(ckpt_path)
+    checkpoint = load_state_dict(ckpt_path)
 
     model.load_state_dict(checkpoint["model"])
 

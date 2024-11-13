@@ -1,9 +1,8 @@
 import pathlib
 from typing import Annotated
 
-from ...core.runtime_resource_management import get_management, resources_device
 from ..registry import register_node
-from ..types import ReturnType, StringMultilineType, StringType, new_widget
+from ..types import FORCE_INPUT, ReturnType, StringMultilineType, StringType
 
 
 @register_node(category="utils")
@@ -12,7 +11,7 @@ def string_box(string: StringMultilineType) -> tuple[StringType]:
 
 
 @register_node(identifier="ShowString", category="utils", output=True)
-def show_string(string: Annotated[StringType, new_widget(StringType, is_forceInput=True)]):
+def show_string(string: Annotated[StringType, FORCE_INPUT:True]):
     return ReturnType(ui={"string": [str(string)]})
 
 
@@ -37,8 +36,3 @@ CATEGORY : {node_category}
 DESCRIPTION : {node_description}  
 """
             )
-
-
-@register_node(category="utils", output=True)
-def free_vram():
-    get_management(resources_device("cuda")).free(1e30)

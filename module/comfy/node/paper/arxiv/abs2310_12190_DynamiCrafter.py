@@ -1,7 +1,13 @@
+# /// script
+# dependencies = [
+#   "open_clip_torch",
+#   "kornia",
+# ]
+# ///
+
 import os
 from typing import Annotated
 
-import comfy.utils
 import torch
 import torchvision.transforms as transforms
 from einops import rearrange, repeat
@@ -14,6 +20,7 @@ from .....paper.arxiv.abs2310_12190.lvdm.models.samplers.ddim import DDIMSampler
 from .....paper.arxiv.abs2310_12190.lvdm.models.samplers.ddim_multiplecond import DDIMSampler as DDIMSampler_multicond
 from .....paper.arxiv.abs2310_12190.utils.utils import instantiate_from_config
 from .....pipelines.playground_pipeline import PlaygroundPipeline
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import (
     BoolType,
@@ -262,7 +269,7 @@ def load_dynami_crafter(
     ## set use_checkpoint as False as when using deepspeed, it encounters an error "deepspeed backend not set"
     model_config["params"]["unet_config"]["params"]["use_checkpoint"] = False
     model: LatentVisualDiffusion = instantiate_from_config(model_config)
-    ckpt = comfy.utils.load_torch_file(ckpt_path, safe_load=True)
+    ckpt = load_state_dict(ckpt_path)
     model.load_state_dict(ckpt, strict=True)
     model.eval()
     model.model = model.model.to(torch.float16)

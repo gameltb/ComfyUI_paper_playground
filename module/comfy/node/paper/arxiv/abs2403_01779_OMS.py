@@ -1,7 +1,6 @@
 import copy
 from typing import Annotated
 
-import comfy.utils
 import torch
 from diffusers import StableDiffusionPipeline, UNet2DConditionModel, UniPCMultistepScheduler
 
@@ -10,6 +9,7 @@ from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2403_01779 import pipelines
 from .....paper.arxiv.abs2403_01779.utils.utils import is_torch2_available, prepare_image, prepare_mask
 from .....pipelines.playground_pipeline import PlaygroundPipeline
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import (
     ComboWidget,
@@ -62,7 +62,7 @@ class OmsDiffusionPipeline(PlaygroundPipeline):
             )
             ref_unet.register_to_config(in_channels=4)
 
-        state_dict = comfy.utils.load_torch_file(ref_path, safe_load=True)
+        state_dict = load_state_dict(ref_path)
         ref_unet.load_state_dict(state_dict, strict=False)
         ref_unet.to(dtype=sd_pipe.dtype)
 
@@ -199,6 +199,8 @@ def run_oms_diffusers(
     cloth_mask_image = (
         cloth_mask.reshape((-1, 1, cloth_mask.shape[-2], cloth_mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
     )
+
+    import comfy.utils
 
     pbar = comfy.utils.ProgressBar(steps)
 

@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "plyfile",
+# ]
+# ///
+
 from typing import Annotated
 
 from plyfile import PlyData

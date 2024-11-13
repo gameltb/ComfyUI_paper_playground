@@ -1,7 +1,6 @@
 import os
 from typing import Annotated
 
-import comfy.utils
 import cv2
 import torch
 import torch.nn.functional as F
@@ -19,6 +18,7 @@ from .....paper.arxiv.abs2406_09414_Depth_Anything_V2.metric_depth.depth_anythin
     DepthAnythingV2 as DepthAnythingV2Metric,
 )
 from .....pipelines.playground_pipeline import PlaygroundPipeline
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import (
     ComboWidget,
@@ -119,7 +119,7 @@ def load_DepthAnythingV2(
 
     model = repo_config["cls"](**model_configs[repo_config["model_config"]], **repo_config["ext_configs"])
 
-    ckpt = comfy.utils.load_torch_file(ckpt_path, safe_load=True)
+    ckpt = load_state_dict(ckpt_path)
     model.load_state_dict(ckpt)
     model.eval()
 

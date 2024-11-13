@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "flash_attn",
+# ]
+# ///
+
 import random
 from typing import Annotated
 

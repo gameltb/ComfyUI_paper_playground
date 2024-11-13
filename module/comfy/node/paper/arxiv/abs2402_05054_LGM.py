@@ -1,7 +1,14 @@
+# /// script
+# dependencies = [
+#   "roma",
+#   "kiui",
+#   "plyfile",
+# ]
+# ///
+
 import os
 from typing import Annotated
 
-import comfy.utils
 import numpy as np
 import torch
 
@@ -11,6 +18,7 @@ from .....paper.arxiv.abs2402_05054.core.models import LGM
 from .....paper.arxiv.abs2402_05054.core.options import config_defaults
 from .....paper.arxiv.abs2402_05054.mvdream.pipeline_mvdream import MVDreamPipeline
 from .....pipelines.abs2402_05054 import LGMPipeline
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import (
     ComboWidget,
@@ -46,7 +54,7 @@ def load_lgm(
 
     lgm_model = LGM(config_defaults[lgb_config])
 
-    ckpt = comfy.utils.load_torch_file(ckpt_path, safe_load=True)
+    ckpt = load_state_dict(ckpt_path)
     lgm_model.load_state_dict(ckpt, strict=False)
 
     # device

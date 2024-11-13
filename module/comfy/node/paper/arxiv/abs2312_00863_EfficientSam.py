@@ -1,12 +1,12 @@
 from typing import Annotated
 
-import comfy.utils
 import torch
 
 from .....common import path_tool
 from .....core.runtime_resource_management import AutoManage
 from .....paper.arxiv.abs2312_00863.efficient_sam.build_efficient_sam import build_efficient_sam
 from .....paper.arxiv.abs2312_00863.efficient_sam.efficient_sam import EfficientSam
+from .....utils.static_dict import load_state_dict
 from ....registry import register_node
 from ....types import ComboWidget, ImageType, MaskType, make_widget
 from ...utils_image_annotate import ImageAnnotateType
@@ -54,7 +54,7 @@ def load_efficient_sam(
 
     model = build_efficient_sam(**config).eval()
 
-    ckpt = comfy.utils.load_torch_file(ckpt_path, safe_load=True)
+    ckpt = load_state_dict(ckpt_path)
     model.load_state_dict(ckpt["model"])
 
     return (model,)

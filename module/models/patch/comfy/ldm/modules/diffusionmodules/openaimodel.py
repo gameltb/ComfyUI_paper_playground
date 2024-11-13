@@ -61,12 +61,12 @@ class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin[PatchModuleMapType]):
                 image_only_indicator=image_only_indicator,
             )
             h = apply_control(h, control, "input")
-            for p in self.patch_module.get("comfyui_input_block_patch"):
+            for p in self.patcher_module.get("comfyui_input_block_patch"):
                 h = p(h, transformer_options)
 
             hs.append(h)
 
-            for p in self.patch_module.get("comfyui_input_block_patch_after_skip"):
+            for p in self.patcher_module.get("comfyui_input_block_patch_after_skip"):
                 h = p(h, transformer_options)
 
         transformer_options["block"] = ("middle", 0)
@@ -82,14 +82,14 @@ class UNetModel(UNetModel, ControlFlowPatchAbleModuleMixin[PatchModuleMapType]):
                 image_only_indicator=image_only_indicator,
             )
         h = apply_control(h, control, "middle")
-        for p in self.patch_module.get("comfyui_middle_block_patch"):
+        for p in self.patcher_module.get("comfyui_middle_block_patch"):
             h = p(h, transformer_options)
 
         for id, module in enumerate(self.output_blocks):
             transformer_options["block"] = ("output", id)
             hsp = hs.pop()
             hsp = apply_control(hsp, control, "output")
-            for p in self.patch_module.get("comfyui_output_block_patch"):
+            for p in self.patcher_module.get("comfyui_output_block_patch"):
                 h, hsp = p(h, hsp, transformer_options)
 
             h = torch.cat([h, hsp], dim=1)

@@ -37,6 +37,12 @@ class ComfyWidget(AnnotatedBaseModel):
         REGISTERED_TYPES.add(cls.TYPE)
 
 
+INPUT_TYPE = "input_type"
+FORCE_INPUT = "forceInput"
+LAZY = "lazy"
+TOOLTIP = "tooltip"
+
+
 def find_comfy_widget_type_annotation(annotation: Union[Annotated, ComfyWidget]) -> Optional[ComfyWidget]:
     return find_annotated_model(annotation, model_type=ComfyWidget)
 

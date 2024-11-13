@@ -57,8 +57,11 @@ def get_nodes():
     return {k: v.exec.__doc__ for k, v in NODE_CLASS_MAPPINGS.items()}
 
 
+T = typing.TypeVar("T")
+
+
 def register_node(category=None, version=0, identifier=None, display_name=None, output=False):
-    def decorator(f):
+    def decorator(f: T) -> T:
         if PACK_UID is None:
             raise Exception("PACK_UID is not set. Call set_pack_options in __init__.py to set it.")
 
@@ -101,6 +104,12 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                 return_annotation = tuple()
             elif isinstance(return_annotation, tuple):
                 pass
+            elif issubclass(return_annotation, tuple) and hasattr(return_annotation, "_fields"):
+                # assume it's typing.NamedTuple
+                rt_sig = inspect.signature(return_annotation)
+                rt_names, rt_parameters = zip(*rt_sig.parameters.items())
+                node_attrs["RETURN_NAMES"] = tuple(rt_names)
+                return_annotation = map(lambda p: p.annotation, rt_parameters)
             elif typing.get_origin(return_annotation) is tuple:
                 return_annotation = typing.get_args(return_annotation)
             else:

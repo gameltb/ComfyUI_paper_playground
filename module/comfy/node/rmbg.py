@@ -1,13 +1,13 @@
 import os
 from typing import Annotated
 
-import comfy.utils
 import torch
 import torch.amp.autocast_mode
 import torch.nn.functional as F
 
 from ...common import file_get_tool, import_tool
 from ...core.runtime_resource_management import AutoManage
+from ...utils.static_dict import load_state_dict
 from ..registry import register_node
 from ..types import ImageType, MaskType, make_widget
 
@@ -28,7 +28,7 @@ BriaRMBGType = Annotated[briarmbg.BriaRMBG, make_widget("BRIA_RMBG")]
 def load_Bria_RMBG() -> tuple[BriaRMBGType]:
     model_path = os.path.join(REPO_PATH, "pytorch_model.bin")
     net = briarmbg.BriaRMBG()
-    ckpt = comfy.utils.load_torch_file(model_path, safe_load=True)
+    ckpt = load_state_dict(model_path)
     net.load_state_dict(ckpt)
     net.eval()
 

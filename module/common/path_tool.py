@@ -1,10 +1,17 @@
 import os
 from functools import cache
 
-import folder_paths
+try:
+    import folder_paths
 
-HUGGINGFACE_MODEL_PATH = os.path.join(folder_paths.models_dir, "huggingface")
-PLAYGROUND_MODEL_PATH = os.path.join(folder_paths.models_dir, "playground")
+    PLAYGROUND_HUGGINGFACE_MODEL_PATH = os.path.join(folder_paths.models_dir, "huggingface")
+    PLAYGROUND_MODEL_PATH = os.path.join(folder_paths.models_dir, "playground")
+    PLAYGROUND_OUTPUT_DIRECTORY_PATH = folder_paths.output_directory
+except ModuleNotFoundError:
+    PLAYGROUND_HUGGINGFACE_MODEL_PATH = os.getenv("PLAYGROUND_HUGGINGFACE_MODEL_PATH")
+    PLAYGROUND_MODEL_PATH = os.getenv("PLAYGROUND_MODEL_PATH")
+    PLAYGROUND_OUTPUT_DIRECTORY_PATH = os.getenv("PLAYGROUND_OUTPUT_DIRECTORY_PATH")
+
 REPO_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -64,14 +71,14 @@ def get_output_path(save_path):
     file_name = os.path.basename(save_path)
     folder_path = os.path.dirname(save_path)
     if not os.path.isabs(save_path):
-        folder_path = os.path.join(folder_paths.output_directory, folder_path)
+        folder_path = os.path.join(PLAYGROUND_OUTPUT_DIRECTORY_PATH, folder_path)
 
     os.makedirs(folder_path, exist_ok=True)
     return os.path.join(folder_path, file_name)
 
 
 def get_local_huggingface_path(repo_id):
-    return os.path.join(HUGGINGFACE_MODEL_PATH, repo_id)
+    return os.path.join(PLAYGROUND_HUGGINGFACE_MODEL_PATH, repo_id)
 
 
 def gen_default_category_path_by_module_name(self_name):

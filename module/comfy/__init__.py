@@ -6,7 +6,12 @@ from .registry import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS, set_pack_
 
 set_pack_options("paper_playground", "playground")
 
-from .node import diffusers, plyfile, utils, utils_image_annotate
+from .node import plyfile, utils, utils_image, utils_image_annotate
+
+try:
+    from .node import diffusers
+except Exception:
+    traceback.print_exc()
 
 BASE_DIR = os.path.dirname(__file__)
 

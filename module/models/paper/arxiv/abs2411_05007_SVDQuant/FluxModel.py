@@ -5,6 +5,7 @@ from typing import Optional, Self, Tuple
 import nunchaku._C  # noqa: F401
 import torch
 from diffusers.models.normalization import RMSNorm
+from einops import rearrange, repeat
 from torch import nn
 
 
@@ -508,14 +509,24 @@ class FluxSingleTransformerBlock(nn.Module):
         return hidden_states
 
 
-def nunchaku_attention(qkv, batch_size, num_tokens, num_heads, dim_head):
+def nunchaku_attention_spda(qkv: torch.Tensor, batch_size, num_tokens, num_heads, dim_head):
+    reshaped = qkv.view([batch_size, num_tokens, num_heads * 3, dim_head])
+    q = reshaped[:, :, 0:num_heads]
+    k = reshaped[:, :, num_heads : num_heads * 2]
+    v = reshaped[:, :, num_heads * 2 : num_heads * 3]
+    q, k, v = map(lambda t: t.transpose(1, 2), (q, k, v))
+    raw_attn_output = torch.nn.functional.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
+    raw_attn_output = raw_attn_output.transpose(1, 2).contiguous()
+    return raw_attn_output
+
+
+def nunchaku_attention_block_sparse(qkv: torch.Tensor, batch_size, num_tokens, num_heads, dim_head):
+    from block_sparse_attn.block_sparse_attn_interface import _block_sparse_attn_forward
+
     reshaped = qkv.view([batch_size * num_tokens, num_heads * 3, dim_head])
     q = reshaped[:, 0:num_heads]
     k = reshaped[:, num_heads : num_heads * 2]
     v = reshaped[:, num_heads * 2 : num_heads * 3]
-    # raw_attn_output = torch.nn.functional.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
-    from block_sparse_attn.block_sparse_attn_interface import _block_sparse_attn_forward
-
     POOL_SIZE = 128
     pool_tokens = int(num_tokens / POOL_SIZE)
     pool_score = torch.zeros((batch_size, num_heads, pool_tokens, pool_tokens), dtype=torch.int32, device=q.device)
@@ -543,16 +554,19 @@ def nunchaku_attention(qkv, batch_size, num_tokens, num_heads, dim_head):
         -1,
         -1,
     )
-
-    # reshaped = qkv.view([batch_size , num_tokens, num_heads * 3, dim_head])
-    # q = reshaped[:,:, 0:num_heads]
-    # k = reshaped[:,:, num_heads : num_heads * 2]
-    # v = reshaped[:,:, num_heads * 2 : num_heads * 3]
-    # raw_attn_output = attention_blocksparse_ref(q, k, v, None,None,None)
     return raw_attn_output[0]
 
 
-from einops import rearrange, repeat
+def nunchaku_attention_ref(qkv: torch.Tensor, batch_size, num_tokens, num_heads, dim_head):
+    reshaped = qkv.view([batch_size, num_tokens, num_heads * 3, dim_head])
+    q = reshaped[:, :, 0:num_heads]
+    k = reshaped[:, :, num_heads : num_heads * 2]
+    v = reshaped[:, :, num_heads * 2 : num_heads * 3]
+    raw_attn_output = attention_blocksparse_ref(q, k, v, None, None, None)
+    return raw_attn_output[0]
+
+
+nunchaku_attention = nunchaku_attention_spda
 
 
 def construct_local_mask(

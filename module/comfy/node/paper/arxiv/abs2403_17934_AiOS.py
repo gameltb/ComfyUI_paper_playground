@@ -1,8 +1,8 @@
 # /// script
 # dependencies = [
 #   "smplx",
-#   "pytorch3d",
-#   "mmcv",
+#   "git+https://github.com/facebookresearch/pytorch3d.git",
+#   "git+https://github.com/open-mmlab/mmcv.git@1.x",
 # ]
 # ///
 

@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#   "git+https://github.com/facebookresearch/pytorch3d.git",
+# ]
+# ///
+
+
 import os
 from typing import Annotated
 

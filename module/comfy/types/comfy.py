@@ -1,7 +1,6 @@
 import typing
 from typing import Annotated, Any, Optional, TypedDict, Union
 
-import comfy.samplers
 import torch
 from pydantic import BaseModel
 
@@ -20,6 +19,7 @@ if typing.TYPE_CHECKING or COMFYUI:
     import comfy.model_patcher
     import comfy.sd
     import comfy_execution.graph
+    import comfy.samplers
 else:
 
     class comfy:
@@ -40,6 +40,9 @@ else:
             class VAE: ...
 
             class CLIP: ...
+
+        class samplers:
+            class KSAMPLER: ...
 
     class comfy_execution:
         class graph:

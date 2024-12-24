@@ -17,9 +17,9 @@ if typing.TYPE_CHECKING or COMFYUI:
     import comfy.clip_vision
     import comfy.controlnet
     import comfy.model_patcher
+    import comfy.samplers
     import comfy.sd
     import comfy_execution.graph
-    import comfy.samplers
 else:
 
     class comfy:

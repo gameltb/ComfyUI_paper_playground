@@ -1,8 +1,9 @@
 from typing import Annotated, Optional
 
 import torch
-from .annotated_model import AnnotatedBaseModel, find_annotated_model
 from torch.export import Dim
+
+from .annotated_model import AnnotatedBaseModel, find_annotated_model
 
 
 class TensorModel(AnnotatedBaseModel):

@@ -104,7 +104,11 @@ def register_node(category=None, version=0, identifier=None, display_name=None, 
                 return_annotation = tuple()
             elif isinstance(return_annotation, tuple):
                 pass
-            elif issubclass(return_annotation, tuple) and hasattr(return_annotation, "_fields"):
+            elif (
+                inspect.isclass(return_annotation)
+                and issubclass(return_annotation, tuple)
+                and hasattr(return_annotation, "_fields")
+            ):
                 # assume it's typing.NamedTuple
                 rt_sig = inspect.signature(return_annotation)
                 rt_names, rt_parameters = zip(*rt_sig.parameters.items())

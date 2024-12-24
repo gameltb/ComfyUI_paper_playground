@@ -43,7 +43,7 @@ LAZY = "lazy"
 TOOLTIP = "tooltip"
 
 
-def find_comfy_widget_type_annotation(annotation: Union[Annotated, ComfyWidget]) -> Optional[ComfyWidget]:
+def find_comfy_widget_type_annotation(annotation: Union[type, ComfyWidget]) -> Optional[ComfyWidget]:
     return find_annotated_model(annotation, model_type=ComfyWidget)
 
 

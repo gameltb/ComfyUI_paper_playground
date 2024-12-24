@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 from pydantic import BaseModel
 
@@ -13,7 +13,7 @@ class AnnotatedBaseModel(BaseModel):
 M = TypeVar("M", bound=AnnotatedBaseModel)
 
 
-def find_annotated_model(annotation: Union[Annotated, M], model_type: type[M] = AnnotatedBaseModel) -> Optional[M]:
+def find_annotated_model(annotation: Union[type, M], model_type: type[M] = AnnotatedBaseModel) -> Optional[M]:
     if isinstance(annotation, model_type):
         return annotation
     elif hasattr(annotation, "__metadata__"):
